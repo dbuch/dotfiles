@@ -1,4 +1,0 @@
-exit
-vim .config/nushell/
-nvim .config/nushell/prompt.nu
-exit

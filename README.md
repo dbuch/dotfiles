@@ -1,2 +1,2 @@
-# dotfiles
+## dotfiles
 Common config files

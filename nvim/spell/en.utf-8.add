@@ -1,0 +1,16 @@
+dbuch
+buf
+BufWinEnter
+BufWinEnter
+WinEnter
+cmdline
+nvim_lsp
+calc
+filetype
+ui
+hover_select
+egui
+lang
+pointer_state.set(PointerButton::Extra2, PointerClicks::Triple);
+pointer_state.set(PointerButton::Extra2, PointerClicks::Triple);
+0

@@ -1,0 +1,56 @@
+[user]
+	email = boogiewasthere@gmail.com
+	name = Daniel Buch Hansen
+
+[push]
+	default = simple
+  autoSetupRemote = true
+  followTags = true
+
+[core]
+  editor = nvim
+  pager = delta
+  excludesfile = ~/.gitignore
+
+[init]
+  defaultBranch = main
+
+[merge]
+  tool = nvim
+  conflictstyle = zdiff3
+
+[mergetool]
+  prompt = true
+
+[column]
+  ui = auto
+[branch]
+  sort = -committerdate
+
+[tag]
+  sort = version:refname
+
+[diff]
+  algorithm = histogram
+  colorMoved = plain
+  mnemonicPrefix = true
+  renames = true
+
+[fetch]
+  prune = true
+  pruneTags = true
+  all = true
+
+[pull]
+  # rebase = true
+
+[delta]
+  navigate = true    # use n and N to move between diff sections
+  light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+
+[interactive]
+  diffFilter = delta --color-only
+
+[alias]
+  mr-checkout = !sh -c 'git fetch $1 merge-requests/$2/head:mr-$1-$2 && git checkout mr-$1-$2' -
+  pr-checkout = !sh -c 'git fetch origin pull/$1/head:pr-$1 && git checkout pr-$1' -

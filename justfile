@@ -2,5 +2,5 @@ set dotenv-load := true
 
 # Detect OS
 
-apply:
+install:
     echo "test"

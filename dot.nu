@@ -1,16 +1,16 @@
 #!/usr/bin/nu
 
+const links: record = {
+  "config/nvim": ".config/nvim",
+  "config/nushell": ".config/nushell",
+  "config/ghostty": ".config/ghostty",
+  "config/git": ".config/git",
+  "home/ripgreprc": ".ripgreprc",
+}
+
 def main [--install]: nothing -> nothing {
   if ("dot.log" | path exists) {
     rm "dot.log"
-  }
-
-  let links: record = {
-    "config/nvim": ".config/nvim",
-    "config/nushell": ".config/nushell",
-    "config/ghostty": ".config/ghostty",
-    "config/git": ".config/git",
-    "home/ripgreprc": ".ripgreprc",
   }
 
   link_all $links

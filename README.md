@@ -18,7 +18,6 @@ TODO?
 
 # Install
 
-TODO:
+chmod -x dots.nu
 
-Windows? https://dev.to/kaiwalter/get-neovim-plugins-with-build-processes-working-on-windows-i39
-Linux: simple sh?
+./dot.nu

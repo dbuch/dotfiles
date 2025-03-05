@@ -18,11 +18,6 @@ def main [--install]: nothing -> nothing {
   exit 0
 }
 
-def "path is_symlink" []: path -> bool {
-  if not ($in | path exists -n) { return false }
-  return (($in | path type) == 'symlink')
-}
-
 def link [source: path, dest: path] {
   let dest_exists: bool = ($dest | path exists -n)
 
@@ -38,19 +33,7 @@ def link [source: path, dest: path] {
     log $"Succes: ($source) -> ($dest)"
   } catch {
     log $"Failed: ($source) -> ($dest)"
-    log "failed to create link"
   }
-}
-
-def load_config []: nothing -> record<path:string, log_path:string> {
-  const default_config = {
-    "path": "."
-    "log_path": "nu_dots.log"
-  }
-
-  let opened: record<path:path, log_path:path> = try { open config.nuon } catch { $default_config }
-
-  return $opened
 }
 
 def log [msg: string] {

@@ -90,28 +90,80 @@ return {
     opts = {},
   },
   {
-    'lewis6991/hover.nvim',
-    keys = {
-      { 'K', '<Cmd>Hover<cr>' },
-      { 'gK', '<Cmd>HoverSelect<cr>' },
+    'patrickpichler/hovercraft.nvim',
+
+    dependencies = {
+      { 'nvim-lua/plenary.nvim' },
     },
-    ---@module 'hover'
-    ---@type Hover.UserConfig
-    opts = {
-      init = function()
-        require 'hover.providers.lsp'
-        require 'hover.providers.dictionary'
-        require 'hover.providers.fold_preview'
-        require 'hover.providers.man'
-      end,
-      preview_window = true,
-    },
-    config = function(_plugin, hover_opts)
-      require('hover').setup(hover_opts)
-      vim.keymap.set('n', 'K', require('hover').hover, { desc = 'hover.nvim' })
-      vim.keymap.set('n', 'gK', require('hover').hover_select, { desc = 'hover.nvim (select)' })
+
+    -- this is the default config and can be skipped
+    opts = function()
+      return {
+        providers = {
+          providers = {
+            {
+              'LSP',
+              require('hovercraft.provider.lsp.hover').new(),
+            },
+            {
+              'Man',
+              require('hovercraft.provider.man').new(),
+            },
+            {
+              'Dictionary',
+              require('hovercraft.provider.dictionary').new(),
+            },
+          }
+        },
+
+        window = {
+          border = 'single',
+        },
+
+        keys = {
+          { '<C-u>',   function() require('hovercraft').scroll({ delta = -4 }) end },
+          { '<C-d>',   function() require('hovercraft').scroll({ delta = 4 }) end },
+          { '<TAB>',   function() require('hovercraft').hover_next() end },
+          { '<S-TAB>', function() require('hovercraft').hover_next({ step = -1 }) end },
+        }
+      }
     end,
+
+    keys = {
+      { "K", function()
+        local hovercraft = require("hovercraft")
+
+        if hovercraft.is_visible() then
+          hovercraft.enter_popup()
+        else
+          hovercraft.hover()
+        end
+      end },
+    },
   },
+  -- {
+  --   'lewis6991/hover.nvim',
+  --   keys = {
+  --     { 'K',  '<Cmd>Hover<cr>' },
+  --     { 'gK', '<Cmd>HoverSelect<cr>' },
+  --   },
+  --   ---@module 'hover'
+  --   ---@type Hover.UserConfig
+  --   opts = {
+  --     init = function()
+  --       require 'hover.providers.lsp'
+  --       require 'hover.providers.dictionary'
+  --       require 'hover.providers.fold_preview'
+  --       require 'hover.providers.man'
+  --     end,
+  --     preview_window = true,
+  --   },
+  --   config = function(_plugin, hover_opts)
+  --     require('hover').setup(hover_opts)
+  --     vim.keymap.set('n', 'K', require('hover').hover, { desc = 'hover.nvim' })
+  --     vim.keymap.set('n', 'gK', require('hover').hover_select, { desc = 'hover.nvim (select)' })
+  --   end,
+  -- },
   {
     'echasnovski/mini.colors',
     init = function()
@@ -218,7 +270,7 @@ return {
   {
     'rachartier/tiny-inline-diagnostic.nvim',
     event = 'VeryLazy', -- Or `LspAttach`
-    priority = 1000, -- needs to be loaded in first
+    priority = 1000,    -- needs to be loaded in first
     opts = {
       preset = 'simple',
       options = {

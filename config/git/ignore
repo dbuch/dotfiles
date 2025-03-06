@@ -1,7 +1,13 @@
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# Nushell
 history.sqlite3*
+
+# Rust
+debug/
+target/
 
 # Logs
 npm-debug.log*
@@ -19,6 +25,7 @@ yarn-error.log*
 *.pyc
 *.pyo
 *.pyd
+*.pdb
 
 # Dependency directories
 node_modules/

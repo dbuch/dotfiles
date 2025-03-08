@@ -110,6 +110,10 @@ return {
               require('hovercraft.provider.man').new(),
             },
             {
+              'Git Blame',
+              require('hovercraft.provider.git.blame').new()
+            },
+            {
               'Dictionary',
               require('hovercraft.provider.dictionary').new(),
             },
@@ -141,29 +145,6 @@ return {
       end },
     },
   },
-  -- {
-  --   'lewis6991/hover.nvim',
-  --   keys = {
-  --     { 'K',  '<Cmd>Hover<cr>' },
-  --     { 'gK', '<Cmd>HoverSelect<cr>' },
-  --   },
-  --   ---@module 'hover'
-  --   ---@type Hover.UserConfig
-  --   opts = {
-  --     init = function()
-  --       require 'hover.providers.lsp'
-  --       require 'hover.providers.dictionary'
-  --       require 'hover.providers.fold_preview'
-  --       require 'hover.providers.man'
-  --     end,
-  --     preview_window = true,
-  --   },
-  --   config = function(_plugin, hover_opts)
-  --     require('hover').setup(hover_opts)
-  --     vim.keymap.set('n', 'K', require('hover').hover, { desc = 'hover.nvim' })
-  --     vim.keymap.set('n', 'gK', require('hover').hover_select, { desc = 'hover.nvim (select)' })
-  --   end,
-  -- },
   {
     'echasnovski/mini.colors',
     init = function()

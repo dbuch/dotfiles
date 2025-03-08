@@ -36,8 +36,8 @@ return {
       require('mini.pick').setup(opts)
 
       vim.api.nvim_set_hl(0, 'MiniPickMatchCurrent', {
-        --link = 'Visual',
-        link = 'PmenuExtra',
+        link = 'Visual',
+        --link = 'PmenuExtra',
       })
     end,
   },
@@ -229,24 +229,6 @@ return {
     'brenoprata10/nvim-highlight-colors',
     cmd = { 'HighlightColors' },
     opts = {},
-  },
-  {
-    'mikesmithgh/kitty-scrollback.nvim',
-    enabled = true,
-    lazy = true,
-    cmd = { 'KittyScrollbackGenerateKittens', 'KittyScrollbackCheckHealth' },
-    event = { 'User KittyScrollbackLaunch' },
-    config = function()
-      vim.api.nvim_create_autocmd({ 'FileType' }, {
-        group = vim.api.nvim_create_augroup('kitty_scrollback_quit_with_q', { clear = true }),
-        pattern = { 'kitty-scrollback' },
-        callback = function()
-          vim.keymap.set({ 'n' }, 'q', '<Plug>(KsbCloseOrQuitAll)')
-          return true
-        end,
-      })
-      require('kitty-scrollback').setup()
-    end,
   },
   {
     'rachartier/tiny-inline-diagnostic.nvim',

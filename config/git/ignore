@@ -1,21 +1,22 @@
-# OS-specific files
+## OS-specific files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Nushell
+## Nushell
 history.sqlite3*
 
-# Rust
+## Rust
 debug/
 target/
 
-# Logs
+## Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.log
 
-# Compiled files
+## Compiled files
 *.class
 *.o
 *.out
@@ -27,7 +28,7 @@ yarn-error.log*
 *.pyd
 *.pdb
 
-# Dependency directories
+## Dependency directories
 node_modules/
 vendor/
 venv/
@@ -35,7 +36,7 @@ venv/
 .venv
 __pycache__/
 
-# Editor & IDE settings
+## Editor & IDE settings
 .vscode/
 .idea/
 *.suo
@@ -44,11 +45,32 @@ __pycache__/
 *.sln
 *.swp
 
-# macOS
+## macOS
 ._*
 .Trashes
 *.swp
 
-# Git
+## Git
 .git/
 .gitignore
+
+## direnv
+/.envrc
+/.direnv/
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+## Temporary files
+*~
+\#*
+\#*\#
+.#*
+
+## Tags
+tags
+tags.*
+TAGS
+TAGS.*

@@ -20,21 +20,38 @@ def main [--install]: nothing -> nothing {
   exit 0
 }
 
-def link [source: path, dest: path] {
-  let dest_exists: bool = ($dest | path exists -n)
+def "path is_symlink" []: path -> bool {
+  return (($in | path type) == 'symlink')
+}
 
-  if $dest_exists {
-    log $"Removing ($dest)"
-    rm -rf $dest
+def link [target_path: path, link_path: path] {
+  if not ($link_path | path is_symlink) {
+    error make {
+          msg: "link is not a symlink"
+          label: {
+              text: ""
+              span: (metadata $link_path).span
+          }
+          help: "you should validate link path is correct or move/adapt the data"
+      }
   }
 
-  log $"Creating: ($source) -> ($dest)"
+  if ($link_path | path expand -s) == ($target_path | path expand -s -n) {
+    print "Nothing to do!"
+    return;
+  }
 
+  if $link_path {
+    log $"Removing ($link_path)"
+    rm -rf $link_path
+  }
+
+
+  log $"Creating: ($link_path) -> ($target_path)"
   try { 
-    ln -svrf $source $dest
-    log $"Succes: ($source) -> ($dest)"
+    ln -sr $target_path $link_path
   } catch {
-    log $"Failed: ($source) -> ($dest)"
+    log $"Failed: ($link_path) -> ($target_path)"
   }
 }
 

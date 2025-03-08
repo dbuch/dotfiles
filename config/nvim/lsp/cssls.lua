@@ -2,7 +2,7 @@
 return {
   cmd = { 'vscode-css-languageserver', '--stdio' },
   filetypes = { 'css', 'scss', 'less' },
-  root_dir = function(cb)
+  root_dir = function(bufnr, cb)
     cb(vim.fn.getcwd())
   end,
 

@@ -2,7 +2,7 @@
 return {
   cmd = { 'nu', '--lsp' },
   filetypes = { 'nu' },
-  root_dir = function(cb)
+  root_dir = function(bufnr, cb)
     local root_path = vim.fs.root(0, '.git')
     cb(root_path or vim.fn.getcwd())
   end,

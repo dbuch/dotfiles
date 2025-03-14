@@ -3,6 +3,7 @@ use prompt.nu create_left_prompt
 use prompt.nu create_right_prompt
 
 $env.config = ($env.config? | default {} | merge {
+  buffer_editor: nvim
   show_banner: false
   ls: {
     use_ls_colors: true

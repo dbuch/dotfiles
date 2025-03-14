@@ -1,5 +1,5 @@
 vim.opt.backup = true
-vim.opt.backupdir:remove '.'
+vim.opt.backupdir:remove('.')
 vim.opt.breakindent = true
 --TODO  o.clipboard      = 'unnamedplus' Fix this when wl-copy behaves
 --OR https://github.com/neovim/neovim/pull/21091
@@ -32,23 +32,23 @@ vim.opt.pumblend = 6
 vim.opt.pumheight = 10
 vim.opt.wrap = false
 
-vim.opt.shortmess:append { W = true, I = true, c = true, C = true }
-vim.opt.completeopt:append {
+vim.opt.shortmess:append({ W = true, I = true, c = true, C = true })
+vim.opt.completeopt:append({
   'noinsert',
   'menuone',
   'noselect',
   'preview',
-}
+})
 
 vim.opt.showbreak = '↳ '
 vim.opt.mouse = 'a'
 vim.opt.mousemodel = 'extend'
 vim.opt.mousemoveevent = true
-vim.opt.diffopt:append {
+vim.opt.diffopt:append({
   'vertical',
   'foldcolumn:0',
   'indent-heuristic',
-}
+})
 
 vim.opt.timeoutlen = 300
 vim.opt.updatetime = 200
@@ -60,13 +60,13 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.splitkeep = 'screen'
 
-vim.opt.formatoptions:append {
+vim.opt.formatoptions:append({
   r = true, -- Automatically insert comment leader after <Enter> in Insert mode.
   o = true, -- Automatically insert comment leader after 'o' or 'O' in Normal mode.
   l = true, -- Long lines are not broken in insert mode.
   t = true, -- Do not auto wrap text
   n = true, -- Recognise lists
-}
+})
 
 vim.opt.cmdheight = 0
 vim.opt.laststatus = 3
@@ -76,11 +76,12 @@ vim.opt.showcmd = false
 -- Folding
 vim.g.sh_fold_enabled = 1
 
-vim.opt.fillchars = { eob = ' ', diff = ' ', foldopen = '', foldclose = '', foldsep = ' ', fold = ' ' }
+vim.opt.fillchars =
+  { eob = ' ', diff = ' ', foldopen = '', foldclose = '', foldsep = ' ', fold = ' ' }
 -- vim.opt.foldcolumn = 'auto:0'
 vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 99
-vim.opt.foldopen:append 'jump'
+vim.opt.foldopen:append('jump')
 
 vim.wo.foldmethod = 'expr'
 vim.wo.foldcolumn = 'auto:1'
@@ -93,11 +94,10 @@ vim.opt.grepprg = 'rg --vimgrep'
 -- session
 vim.opt.sessionoptions = { 'buffers', 'curdir', 'winsize', 'help', 'globals', 'skiprtp', 'folds' }
 
-
 -- INFO: settings to set nushell as the shell for the :! command
 -- --
 -- path to the Nushell executable
-vim.opt.sh = "nu"
+vim.opt.sh = 'nu'
 
 -- WARN: disable the usage of temp files for shell commands
 -- because Nu doesn't support `input redirection` which Neovim uses to send buffer content to a command:
@@ -110,22 +110,22 @@ vim.opt.shelltemp = false
 -- 1. when 'shelltemp' is `true`
 -- 2. in the `diff-mode` (`nvim -d file1 file2`) when `diffopt` is set
 --    to use an external diff command: `set diffopt-=internal`
-vim.opt.shellredir = "out+err> %s"
+vim.opt.shellredir = 'out+err> %s'
 
 -- flags for nu:
 -- * `--stdin`       redirect all input to -c
 -- * `--no-newline`  do not append `\n` to stdout
 -- * `--commands -c` execute a command
-vim.opt.shellcmdflag = "--stdin --no-newline -c"
+vim.opt.shellcmdflag = '--stdin --no-newline -c'
 
 -- disable all escaping and quoting
-vim.opt.shellxescape = ""
-vim.opt.shellxquote = ""
-vim.opt.shellquote = ""
+vim.opt.shellxescape = ''
+vim.opt.shellxquote = ''
+vim.opt.shellquote = ''
 
 -- string to be used with `:make` command to:
 -- 1. save the stderr of `makeprg` in the temp file which Neovim reads using `errorformat` to populate the `quickfix` buffer
 -- 2. show the stdout, stderr and the return_code on the screen
 -- NOTE: `ansi strip` removes all ansi coloring from nushell errors
 vim.opt.shellpipe =
-'| complete | update stderr { ansi strip } | tee { get stderr | save --force --raw %s } | into record'
+  '| complete | update stderr { ansi strip } | tee { get stderr | save --force --raw %s } | into record'

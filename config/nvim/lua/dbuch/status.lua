@@ -37,7 +37,7 @@ local function hldefs()
     api.nvim_set_hl(0, attrs[3], { fg = fg, bg = bg })
   end
 
-  local dhl = get_hl 'Debug'
+  local dhl = get_hl('Debug')
   api.nvim_set_hl(0, 'LspName', { fg = dhl.fg, bg = bg })
 
   local fg = get_hl('MoreMsg').fg
@@ -58,7 +58,7 @@ end
 --- @return string
 local function lsp_name(active)
   local names = {} ---@type string[]
-  for _, client in ipairs(vim.lsp.get_clients { bufnr = 0 }) do
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
     names[#names + 1] = client.name
   end
 
@@ -190,7 +190,7 @@ end
 function M.bufname()
   local buf_name = api.nvim_buf_get_name(0)
   if vim.startswith(buf_name, 'gitsigns://') then
-    local _, _, revision, relpath = buf_name:find [[^gitsigns://.*/%.git.*/(.*):(.*)]]
+    local _, _, revision, relpath = buf_name:find([[^gitsigns://.*/%.git.*/(.*):(.*)]])
     return relpath .. '@' .. revision:sub(1, 7)
   end
 
@@ -234,7 +234,7 @@ end
 --- @param recording_mode? RecordingEventArgs
 local function set(active, global, recording_mode)
   local scope = global and 'o' or 'wo'
-  vim[scope].statusline = parse_sections {
+  vim[scope].statusline = parse_sections({
     {
       highlight(1, active),
       highlight(1, active),
@@ -254,7 +254,7 @@ local function set(active, global, recording_mode)
       highlight(1, active),
       ' %3p%% %2l(%02c)/%-3L ', -- 80% 65[12]/120
     },
-  }
+  })
 end
 
 local group = api.nvim_create_augroup('statusline', {})

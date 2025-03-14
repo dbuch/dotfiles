@@ -30,7 +30,7 @@ local function ensure_installed()
     'git_config',
     'git_rebase',
   }
-  if not vim.uv.os_uname().sysname:match 'Windows' then
+  if not vim.uv.os_uname().sysname:match('Windows') then
     table.insert(base, 'bash')
   end
   return base
@@ -57,7 +57,7 @@ return {
     event = { 'VeryLazy' },
     init = function(plugin)
       require('lazy.core.loader').add_to_rtp(plugin)
-      require 'nvim-treesitter.query_predicates'
+      require('nvim-treesitter.query_predicates')
     end,
     dependencies = {
       -- 'nvim-treesitter/nvim-treesitter-textobjects',

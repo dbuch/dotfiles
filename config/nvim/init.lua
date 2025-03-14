@@ -8,7 +8,7 @@ _G.safe_require = function(modname)
   return false
 end
 
-_G.Utils = require 'dbuch.utils'
+_G.Utils = require('dbuch.utils')
 
 -- Early Configuration
 vim.g.loaded_netrwPlugin = 1
@@ -28,7 +28,7 @@ vim.loader.enable()
 
 -- Bootstrap
 ---@type string
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 
 if not vim.uv.fs_stat(lazypath) then
   vim
@@ -46,4 +46,4 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 -- Initialize
-safe_require 'dbuch'
+safe_require('dbuch')

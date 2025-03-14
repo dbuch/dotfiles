@@ -1,13 +1,13 @@
 local M = {}
 
-M.root = require 'dbuch.traits.root'
+M.root = require('dbuch.traits.root')
 
 function M.notify(msg)
   vim.notify(msg)
 end
 
 ---@return boolean
-M.is_windows = jit.os:find 'Windows'
+M.is_windows = jit.os:find('Windows')
 
 ---@param path string
 ---@return string
@@ -36,7 +36,8 @@ function M.smart_quit()
     vim.api.nvim_buf_delete(current_buf, {})
   end
 
-  local loaded_buffers = vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
+  local loaded_buffers =
+    vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
 
   local buf_is_file = function(window)
     local window_buf = vim.api.nvim_win_get_buf(window)
@@ -46,12 +47,12 @@ function M.smart_quit()
   local windows = vim.iter(vim.api.nvim_list_wins()):filter(buf_is_file):totable()
 
   if #loaded_buffers <= 1 then
-    vim.cmd 'q'
+    vim.cmd('q')
     return
   end
 
   if #loaded_buffers - 1 <= 1 then
-    vim.notify 'Last buf'
+    vim.notify('Last buf')
   end
 
   -- local valid_buf = function(window)

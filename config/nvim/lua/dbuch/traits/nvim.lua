@@ -92,7 +92,7 @@ function M.get_root(path)
   ---@type string[]
   local roots = {}
   if path then
-    local active_clients = vim.lsp.get_clients { bufnr = 0 }
+    local active_clients = vim.lsp.get_clients({ bufnr = 0 })
     for _, client in pairs(active_clients) do
       local wsf = client.config.workspace_folders
       ---@param ws lsp.WorkspaceFolder
@@ -100,7 +100,9 @@ function M.get_root(path)
       local filter_map = function(ws)
         return vim.uri_to_fname(ws.uri)
       end
-      local paths = wsf and vim.tbl_map(filter_map, wsf) or client.config.root_dir and { client.config.root_dir } or {}
+      local paths = wsf and vim.tbl_map(filter_map, wsf)
+        or client.config.root_dir and { client.config.root_dir }
+        or {}
       for _, p in ipairs(paths) do
         ---@type string?
         local r = vim.uv.fs_realpath(p)
@@ -134,7 +136,8 @@ end
 
 M.has_words_before = function()
   local line, col = unpack(vim.api.nvim_win_get_cursor(0))
-  return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match '%s' == nil
+  return col ~= 0
+    and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match('%s') == nil
 end
 
 function M.init_printf()
@@ -148,19 +151,19 @@ function M.init_printf()
     if vim.in_fast_event() then
       return orig_print(...)
     end
-    for _, x in ipairs { ... } do
+    for _, x in ipairs({ ... }) do
       if type(x) == 'string' then
         vim.api.nvim_out_write(x)
       else
         vim.api.nvim_out_write(vim.inspect(x, { newline = ' ', indent = '' }))
       end
     end
-    vim.api.nvim_out_write '\n'
+    vim.api.nvim_out_write('\n')
   end
 end
 
 function M.inlay_hint_toggle()
-  local toggle_value = not vim.lsp.inlay_hint.is_enabled {}
+  local toggle_value = not vim.lsp.inlay_hint.is_enabled({})
   vim.lsp.inlay_hint.enable(toggle_value)
   return toggle_value
 end
@@ -176,7 +179,8 @@ function M.smart_q()
     vim.api.nvim_buf_delete(current_buf, {})
   end
 
-  local loaded_buffers = vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
+  local loaded_buffers =
+    vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
 
   local buf_is_file = function(window)
     local window_buf = vim.api.nvim_win_get_buf(window)
@@ -186,12 +190,12 @@ function M.smart_q()
   local windows = vim.iter(vim.api.nvim_list_wins()):filter(buf_is_file):totable()
 
   if #loaded_buffers <= 1 then
-    vim.cmd 'q'
+    vim.cmd('q')
     return
   end
 
   if #loaded_buffers - 1 <= 1 then
-    vim.notify 'Last buf'
+    vim.notify('Last buf')
   end
 
   -- local valid_buf = function(window)

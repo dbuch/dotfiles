@@ -1,6 +1,6 @@
-require 'dbuch.traits.string'
+require('dbuch.traits.string')
 
 return {
-  nvim = require 'dbuch.traits.nvim',
-  lazy = require 'dbuch.traits.lazy',
+  nvim = require('dbuch.traits.nvim'),
+  lazy = require('dbuch.traits.lazy'),
 }

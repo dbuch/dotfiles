@@ -1,6 +1,6 @@
 local api, lsp = vim.api, vim.lsp
 local get_clients = vim.lsp.get_clients
-local NvimTrait = require 'dbuch.traits.nvim'
+local NvimTrait = require('dbuch.traits.nvim')
 
 local function client_complete()
   --- @param c vim.lsp.Client
@@ -13,7 +13,7 @@ end
 api.nvim_create_user_command('LspRestart', function(kwargs)
   local bufnr = vim.api.nvim_get_current_buf()
   local name = kwargs.fargs[1] --- @type string
-  for _, client in ipairs(get_clients { bufnr = bufnr, name = name }) do
+  for _, client in ipairs(get_clients({ bufnr = bufnr, name = name })) do
     local bufs = vim.deepcopy(client.attached_buffers)
     client:stop()
     vim.wait(30000, function()
@@ -36,7 +36,7 @@ end, {
 api.nvim_create_user_command('LspStop', function(kwargs)
   local bufnr = vim.api.nvim_get_current_buf()
   local name = kwargs.fargs[1] --- @type string
-  for _, client in ipairs(get_clients { bufnr = bufnr, name = name }) do
+  for _, client in ipairs(get_clients({ bufnr = bufnr, name = name })) do
     client:stop()
   end
 end, {
@@ -52,7 +52,7 @@ do -- LspLog
 
   api.nvim_create_user_command('LspLog', function()
     if vim.uv.fs_stat(path) == nil then
-      vim.notify 'No lsp log available'
+      vim.notify('No lsp log available')
       return
     end
 

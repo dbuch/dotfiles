@@ -17,7 +17,7 @@ local function on_attach(cb, augroup)
 end
 
 on_attach(function(_client, _bufnr)
-  if safe_require 'lsp_utils' then
+  if safe_require('lsp_utils') then
     -- Detach on first succes require
     return true
   end
@@ -33,7 +33,9 @@ on_attach(function(client, bufnr)
   map('n', '<leader>i', function()
     if client.server_capabilities.inlayHintProvider then
       local enabled = require('dbuch.traits.nvim').inlay_hint_toggle()
-      vim.notify(string.format('%s %s inlay hints!', client.name, enabled and 'enabled' or ' disabled'))
+      vim.notify(
+        string.format('%s %s inlay hints!', client.name, enabled and 'enabled' or ' disabled')
+      )
     else
       vim.notify(client.name .. ' doesnt support inlay hints')
     end

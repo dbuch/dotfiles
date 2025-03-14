@@ -29,7 +29,11 @@ return {
       local opts = require('lazy.core.plugin').values(plugin, 'opts', false)
       local mappings = {
         { opts.mappings.start, desc = 'Start align', mode = { 'n', 'v' } },
-        { opts.mappings.start_with_preview, desc = 'Start align with Preview', mode = { 'n', 'v' } },
+        {
+          opts.mappings.start_with_preview,
+          desc = 'Start align with Preview',
+          mode = { 'n', 'v' },
+        },
       }
       return vim.list_extend(
         vim
@@ -158,7 +162,8 @@ return {
           max_items = 20,
           selection = {
             preselect = function(ctx)
-              return ctx.mode ~= 'cmdline' and not require('blink.cmp').snippet_active { direction = 1 }
+              return ctx.mode ~= 'cmdline'
+                and not require('blink.cmp').snippet_active({ direction = 1 })
             end,
             auto_insert = function(ctx)
               return ctx.mode ~= 'cmdline'

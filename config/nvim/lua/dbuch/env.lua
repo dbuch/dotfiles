@@ -22,13 +22,13 @@ function M.stdpath_normalized(what)
 end
 
 ---@type boolean
-M.is_unix = vim.uv.os_uname().sysname:match 'Windows' == nil
+M.is_unix = vim.uv.os_uname().sysname:match('Windows') == nil
 ---@type string|string[]|nil
-M.cache_dir = M.stdpath_normalized 'cache'
+M.cache_dir = M.stdpath_normalized('cache')
 ---@type string|string[]|nil
-M.data_dir = M.stdpath_normalized 'data'
+M.data_dir = M.stdpath_normalized('data')
 ---@type string|string[]|nil
-M.log_dir = M.stdpath_normalized 'log'
+M.log_dir = M.stdpath_normalized('log')
 ---@type string|string[]|nil
 M.undo_dir = M.cache_dir .. '/undodir/'
 

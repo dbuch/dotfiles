@@ -111,13 +111,13 @@ return {
             },
             {
               'Git Blame',
-              require('hovercraft.provider.git.blame').new()
+              require('hovercraft.provider.git.blame').new(),
             },
             {
               'Dictionary',
               require('hovercraft.provider.dictionary').new(),
             },
-          }
+          },
         },
 
         window = {
@@ -125,31 +125,54 @@ return {
         },
 
         keys = {
-          { '<C-u>',   function() require('hovercraft').scroll({ delta = -4 }) end },
-          { '<C-d>',   function() require('hovercraft').scroll({ delta = 4 }) end },
-          { '<TAB>',   function() require('hovercraft').hover_next() end },
-          { '<S-TAB>', function() require('hovercraft').hover_next({ step = -1 }) end },
-        }
+          {
+            '<C-u>',
+            function()
+              require('hovercraft').scroll({ delta = -4 })
+            end,
+          },
+          {
+            '<C-d>',
+            function()
+              require('hovercraft').scroll({ delta = 4 })
+            end,
+          },
+          {
+            '<TAB>',
+            function()
+              require('hovercraft').hover_next()
+            end,
+          },
+          {
+            '<S-TAB>',
+            function()
+              require('hovercraft').hover_next({ step = -1 })
+            end,
+          },
+        },
       }
     end,
 
     keys = {
-      { "K", function()
-        local hovercraft = require("hovercraft")
+      {
+        'K',
+        function()
+          local hovercraft = require('hovercraft')
 
-        if hovercraft.is_visible() then
-          hovercraft.enter_popup()
-        else
-          hovercraft.hover()
-        end
-      end },
+          if hovercraft.is_visible() then
+            hovercraft.enter_popup()
+          else
+            hovercraft.hover()
+          end
+        end,
+      },
     },
   },
   {
     'echasnovski/mini.colors',
     init = function()
       vim.api.nvim_create_user_command('LoadMiniColors', function()
-        vim.cmd 'Lazy load mini.colors'
+        vim.cmd('Lazy load mini.colors')
       end, {})
     end,
     lazy = true,
@@ -168,7 +191,7 @@ return {
           ---@type string
           local basename = fs_entry.name
           if basename:sub(0, 1) == '.' then
-            if basename:match '%.config' or basename:match '%.git' then
+            if basename:match('%.config') or basename:match('%.git') then
               return true
             end
             return false
@@ -233,7 +256,7 @@ return {
   {
     'rachartier/tiny-inline-diagnostic.nvim',
     event = 'VeryLazy', -- Or `LspAttach`
-    priority = 1000,    -- needs to be loaded in first
+    priority = 1000, -- needs to be loaded in first
     opts = {
       preset = 'simple',
       options = {

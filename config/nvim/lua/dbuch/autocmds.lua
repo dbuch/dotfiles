@@ -1,22 +1,22 @@
 local api = vim.api
 local autocmd = api.nvim_create_autocmd
-local NvimTrait = require 'dbuch.traits.nvim'
+local NvimTrait = require('dbuch.traits.nvim')
 
 autocmd('TextYankPost', {
-  group = NvimTrait.augroup 'TextYank',
+  group = NvimTrait.augroup('TextYank'),
   desc = 'highlight on yank',
   pattern = '*',
   callback = function(_args)
-    vim.hl.on_yank {
+    vim.hl.on_yank({
       higroup = 'Search',
       timeout = 200,
       on_visual = true,
-    }
+    })
   end,
 })
 
 autocmd('VimEnter', {
-  group = NvimTrait.augroup 'paru_review',
+  group = NvimTrait.augroup('paru_review'),
   callback = function(args)
     local path = args.file
     local is_dir = vim.fn.isdirectory(path)
@@ -25,24 +25,24 @@ autocmd('VimEnter', {
       ---@param p string
       ---@return boolean
       local function has_pkgbuild(p)
-        return p:match 'PKGBUILD'
+        return p:match('PKGBUILD')
       end
       ---@param pkgbuild_file string
       for pkgbuild_file in vim.iter(vim.fs.dir(path)):filter(has_pkgbuild) do
         vim.cmd('e ' .. pkgbuild_file)
-        vim.cmd 'setf sh'
+        vim.cmd('setf sh')
       end
     end
   end,
 })
 
 autocmd('VimResized', {
-  group = NvimTrait.augroup 'wind_resize',
+  group = NvimTrait.augroup('wind_resize'),
   command = 'wincmd =',
 })
 
 autocmd('BufReadPost', {
-  group = NvimTrait.augroup 'last_loc',
+  group = NvimTrait.augroup('last_loc'),
   callback = function(args)
     local mark = api.nvim_buf_get_mark(args.buf, '"')
     local lcount = api.nvim_buf_line_count(args.buf)
@@ -53,7 +53,7 @@ autocmd('BufReadPost', {
 })
 
 autocmd('FileType', {
-  group = NvimTrait.augroup 'close_with_q',
+  group = NvimTrait.augroup('close_with_q'),
   pattern = {
     'qf',
     'help',
@@ -70,7 +70,7 @@ autocmd('FileType', {
 })
 
 autocmd('TermOpen', {
-  group = NvimTrait.augroup 'terminal',
+  group = NvimTrait.augroup('terminal'),
   callback = function(args)
     ---@type vim.keymap.set.Opts
     local opts = {
@@ -95,7 +95,7 @@ end
 ---@field event string
 ---@field root string
 autocmd('LspAttach', {
-  group = NvimTrait.augroup 'rooter',
+  group = NvimTrait.augroup('rooter'),
   callback = function(args)
     local client = vim.lsp.get_client_by_id(args.data.client_id) ---@type table|nil
     if client == nil then

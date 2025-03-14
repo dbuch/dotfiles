@@ -1,7 +1,7 @@
-local NvimTrait = require 'dbuch.traits.nvim'
+local NvimTrait = require('dbuch.traits.nvim')
 
-safe_require 'dbuch.options'
-safe_require 'dbuch.mappings'
+safe_require('dbuch.options')
+safe_require('dbuch.mappings')
 
 NvimTrait.init_printf()
 
@@ -10,7 +10,7 @@ NvimTrait.init_printf()
 ---@field patterns string[]
 ---@field fallback boolean
 
-require('lazy').setup {
+require('lazy').setup({
   spec = {
     { import = 'dbuch.plugins' },
   },
@@ -31,7 +31,7 @@ require('lazy').setup {
     patterns = {},
     fallback = false,
   },
-  lockfile = vim.fn.stdpath 'data' .. '/lazy-lock.json',--[[@type string]]
+  lockfile = vim.fn.stdpath('data') .. '/lazy-lock.json',--[[@type string]]
   performance = {
     cache = {
       enabled = not vim.loader.enabled,
@@ -59,10 +59,10 @@ require('lazy').setup {
     },
   },
   debug = vim.env.LAZY_DEBUG or false,
-}
+})
 
-safe_require 'dbuch.autocmds'
-safe_require 'dbuch.status'
-safe_require 'dbuch.macros'
+safe_require('dbuch.autocmds')
+safe_require('dbuch.status')
+safe_require('dbuch.macros')
 
-safe_require 'lsp'
+safe_require('lsp')

@@ -24,7 +24,12 @@ map('n', 'k', 'v:count ? "k" : "gk"', { expr = true })
 map('n', '|', [[!v:count ? "<C-W>v<C-W><Right>" : '|']], { expr = true, silent = true })
 map('n', '_', [[!v:count ? "<C-W>s<C-W><Down>"  : '_']], { expr = true, silent = true })
 
-map('n', '<leader>T', ':ToggleTerm direction=vertical size=100<CR>', { nowait = true, silent = true })
+map(
+  'n',
+  '<leader>T',
+  ':ToggleTerm direction=vertical size=100<CR>',
+  { nowait = true, silent = true }
+)
 map('n', '<leader>f', ':Pick files<CR>', { nowait = true, silent = true })
 map('n', '<leader>b', ':Pick buffers<CR>', { nowait = true, silent = true })
 map('n', '<leader>g', ':Pick grep_live<CR>', { nowait = true, silent = true })

@@ -1,7 +1,7 @@
 local M = {}
 
 function M.config()
-  vim.diagnostic.config {
+  vim.diagnostic.config({
     virtual_text = false,
     -- virtual_text = { source = true },
     severity_sort = true,
@@ -17,7 +17,7 @@ function M.config()
     jump = {
       float = true,
     },
-  }
+  })
 
   vim.api.nvim_set_hl(0, 'LspCodeLens', { link = 'WarningMsg' })
 

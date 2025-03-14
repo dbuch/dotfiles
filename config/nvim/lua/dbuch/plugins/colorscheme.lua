@@ -7,7 +7,7 @@ return {
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd.color 'github_dark'
+      vim.cmd.color('github_dark')
     end,
   },
 }

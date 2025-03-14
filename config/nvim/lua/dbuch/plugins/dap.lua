@@ -17,7 +17,7 @@ return {
       {
         '<leader>dB',
         function()
-          require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+          require('dap').set_breakpoint(vim.fn.input('Breakpoint condition: '))
         end,
         desc = 'Breakpoint Condition',
       },
@@ -136,22 +136,34 @@ return {
       },
     },
     config = function()
-      local dap = require 'dap'
-      local ui = require 'dapui'
-      local dap_vt = require 'nvim-dap-virtual-text'
+      local dap = require('dap')
+      local ui = require('dapui')
+      local dap_vt = require('nvim-dap-virtual-text')
 
       dap_vt.setup()
 
       vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
 
-      vim.fn.sign_define('DapBreakpoint', { text = '', texthl = 'DiagnosticError', linehl = '', numhl = '' })
+      vim.fn.sign_define(
+        'DapBreakpoint',
+        { text = '', texthl = 'DiagnosticError', linehl = '', numhl = '' }
+      )
       vim.fn.sign_define(
         'DapBreakpointCondition',
         { text = '', texthl = 'DiagnosticError', linehl = '', numhl = '' }
       )
-      vim.fn.sign_define('DapBreakpointRejected', { text = '', texthl = 'DiagnosticError', linehl = '', numhl = '' })
-      vim.fn.sign_define('DapLogPoint', { text = '󰌑', texthl = 'DiagnosticHint', linehl = '', numhl = '' })
-      vim.fn.sign_define('DapStopped', { text = '', texthl = 'DiagnosticInfo', linehl = '', numhl = '' })
+      vim.fn.sign_define(
+        'DapBreakpointRejected',
+        { text = '', texthl = 'DiagnosticError', linehl = '', numhl = '' }
+      )
+      vim.fn.sign_define(
+        'DapLogPoint',
+        { text = '󰌑', texthl = 'DiagnosticHint', linehl = '', numhl = '' }
+      )
+      vim.fn.sign_define(
+        'DapStopped',
+        { text = '', texthl = 'DiagnosticInfo', linehl = '', numhl = '' }
+      )
 
       dap.listeners.after.event_initialized['dapui_config'] = function()
         ui.open()
@@ -165,9 +177,9 @@ return {
         ui.close()
       end
 
-      ui.setup {
+      ui.setup({
         library = { plugins = { 'nvim-dap-ui' }, types = true },
-      }
+      })
     end,
   },
 }

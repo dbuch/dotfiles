@@ -20,7 +20,7 @@ function M.detectors.lsp(buf)
     return {}
   end
   local roots = {} ---@type string[]
-  local clients = vim.lsp.get_clients { bufnr = buf }
+  local clients = vim.lsp.get_clients({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
     return not vim.tbl_contains(vim.g.root_lsp_ignore or {}, client.name)
   end, clients)
@@ -148,7 +148,7 @@ function M.get(opts)
   local buf = opts.buf or vim.api.nvim_get_current_buf()
   local ret = M.cache[buf]
   if not ret then
-    local roots = M.detect { all = false, buf = buf }
+    local roots = M.detect({ all = false, buf = buf })
     ret = roots[1] and roots[1].paths[1] or vim.uv.cwd()
     M.cache[buf] = ret
   end

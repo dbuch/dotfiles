@@ -18,7 +18,7 @@ return {
       'lewis6991/gitsigns.nvim',
     },
     config = function(_, _)
-      local builtin = require 'statuscol.builtin'
+      local builtin = require('statuscol.builtin')
       local lnum_func = function(args)
         if args.rnu ~= 0 and not args.nu then
           return ''
@@ -32,7 +32,7 @@ return {
         return highlight .. ((args.relnum == 0) and '%l%=' or '%=%l')
       end
 
-      require('statuscol').setup {
+      require('statuscol').setup({
         setopt = true,
         segments = {
           { text = { '%C' }, click = 'v:lua.ScFa' },
@@ -43,7 +43,7 @@ return {
             click = 'v:lua.ScLa',
           },
         },
-      }
+      })
     end,
   },
   {

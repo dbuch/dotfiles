@@ -1,8 +1,8 @@
-vim.filetype.add {
+vim.filetype.add({
   extension = {
     wgsl = 'wgsl',
   },
-}
+})
 
 ---@type vim.lsp.Config
 return {

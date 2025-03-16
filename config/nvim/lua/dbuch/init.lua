@@ -58,6 +58,11 @@ require('lazy').setup({
       },
     },
   },
+  rocks = {
+    enabled = false,
+    hererocks = false,
+  },
+
   debug = vim.env.LAZY_DEBUG or false,
 })
 

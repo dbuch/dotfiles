@@ -1,6 +1,6 @@
 #!/usr/bin/nu
 
-const links = {
+const links: record = {
   "config/nushell": ".config/nushell",
   "config/ghostty": ".config/ghostty",
   "config/nvim":    ".config/nvim",
@@ -24,28 +24,26 @@ def "path is_symlink" []: path -> bool {
   return (($in | path type) == 'symlink')
 }
 
-def link [target_path: path, link_path: path] {
-  if not ($link_path | path is_symlink) {
-    error make {
-          msg: "link is not a symlink"
-          label: {
-              text: ""
-              span: (metadata $link_path).span
-          }
-          help: "you should validate link path is correct or move/adapt the data"
-      }
-  }
+def confirm [prompt: string]: nothing -> bool {
+  let input = (input --numchar 1 -d 'n' $prompt)
+  return ($input == 'y' or $input == 'Y')
+}
 
-  if ($link_path | path expand -s) == ($target_path | path expand -s -n) {
+
+def link [target_path: path, link_path: path] {
+  if ($link_path | path expand) == ($target_path | path expand -n) {
     print "Nothing to do!"
     return;
   }
 
-  if $link_path {
-    log $"Removing ($link_path)"
-    rm -rf $link_path
+  if ($link_path | path exists) {
+    if not (confirm $"Remove ($link_path)") {
+      return
+    }
   }
 
+  log $"Removing ($link_path)"
+  rm -f $link_path
 
   log $"Creating: ($link_path) -> ($target_path)"
   try { 
@@ -56,10 +54,16 @@ def link [target_path: path, link_path: path] {
 }
 
 def log [msg: string] {
-  $"($msg)\n" | save --append "dot.log" 
+  $"($msg)\n" | save --append $logfile_path
 }
 
+
 def link_all [links: record] {
+  if ($links | is-empty source dest) {
+    log "No links defined!"
+    return
+  }
+
   $links | transpose source dest | each { |e| link $"($env.FILE_PWD)/($e.source)" $"($env.HOME)/($e.dest)" }
 }
 

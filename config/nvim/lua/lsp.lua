@@ -65,6 +65,9 @@ local enabled_lsps = {
 
   -- 'omnisharp',
   'wgsl',
+
+  -- Writing
+  'tinymist',
 }
 
 vim.lsp.config('*', {

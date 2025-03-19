@@ -29,6 +29,7 @@ local function ensure_installed()
     'gitattributes',
     'git_config',
     'git_rebase',
+    'typst',
   }
   if not vim.uv.os_uname().sysname:match('Windows') then
     table.insert(base, 'bash')

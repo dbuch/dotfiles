@@ -1,11 +1,12 @@
 #!/usr/bin/nu
 
 const links: record = {
-  "config/nushell": ".config/nushell",
-  "config/ghostty": ".config/ghostty",
-  "config/nvim":    ".config/nvim",
-  "config/git":     ".config/git",
-  "home/ripgreprc": ".ripgreprc",
+  "config/nushell"         : ".config/nushell",
+  "config/ghostty"         : ".config/ghostty",
+  "config/nvim"            : ".config/nvim",
+  "config/git"             : ".config/git",
+  "home/ripgreprc"         : ".ripgreprc",
+  "home/cargo/config.toml" : ".cargo/config.toml",
 }
 
 let logfile_path = $"($env.FILE_PWD)/dot.log"
@@ -59,7 +60,7 @@ def log [msg: string] {
 
 
 def link_all [links: record] {
-  if ($links | is-empty source dest) {
+  if ($links | is-empty) {
     log "No links defined!"
     return
   }

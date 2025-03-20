@@ -30,12 +30,11 @@ def confirm [prompt: string]: nothing -> bool {
   return ($input == 'y' or $input == 'Y')
 }
 
+def validate [target_path: path, link_path: path]: nothing -> bool {
+  return (($link_path | path expand) == ($target_path | path expand -n))
+}
 
 def link [target_path: path, link_path: path] {
-  if ($link_path | path expand) == ($target_path | path expand -n) {
-    print "Nothing to do!"
-    return;
-  }
 
   if ($link_path | path exists) {
     if not (confirm $"Remove ($link_path)") {
@@ -58,13 +57,21 @@ def log [msg: string] {
   $"($msg)\n" | save --append $logfile_path
 }
 
-
 def link_all [links: record] {
   if ($links | is-empty) {
     log "No links defined!"
     return
   }
 
-  $links | transpose source dest | each { |e| link $"($env.FILE_PWD)/($e.source)" $"($env.HOME)/($e.dest)" }
+  for e in ($links | transpose source dest) {
+    let source_path = $env.FILE_PWD | path join $e.source
+    let link_path = $env.FILE_PWD | path join $e.source
+
+    if (validate $source_path $link_path) {
+      print $"✅ ($e.source) is linked to ($e.dest)"
+    } else {
+      link $source_path $link_path
+    }
+  }
 }
 

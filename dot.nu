@@ -35,7 +35,6 @@ def validate [target_path: path, link_path: path]: nothing -> bool {
 }
 
 def link [target_path: path, link_path: path] {
-
   if ($link_path | path exists) {
     if not (confirm $"Remove ($link_path)") {
       return
@@ -68,7 +67,7 @@ def link_all [links: record] {
     let link_path = $env.FILE_PWD | path join $e.source
 
     if (validate $source_path $link_path) {
-      print $"✅ ($e.source) is linked to ($e.dest)"
+      print $"✅ ($e.source) -> ($e.dest)"
     } else {
       link $source_path $link_path
     }

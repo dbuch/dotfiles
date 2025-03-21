@@ -23,7 +23,25 @@ return {
   },
   {
     'mrcjkb/rustaceanvim',
-    version = '^5', -- Recommended
+    version = false, -- Recommended
     lazy = false, -- This plugin is already lazy
+    ---@module 'rustaceanvim'
+    ---@type rustaceanvim.Opts
+    opts = {
+      server = {
+        default_settings = {
+          ['rust-analyzer'] = {
+            cargo = {
+              extraEnv = {
+                RUSTUP_TOOLCHAIN = 'stable',
+              },
+            },
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      vim.g.rustaceanvim = vim.tbl_deep_extend('keep', vim.g.rustaceanvim or {}, opts or {})
+    end,
   },
 }

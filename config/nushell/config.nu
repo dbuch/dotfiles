@@ -61,4 +61,7 @@ $env.PROMPT_MULTILINE_INDICATOR = {|| "::: " }
 
 source "aliases.nu"
 source "completion.nu"
+
 use commands.nu psub
+
+source "auth/api_key.nu"

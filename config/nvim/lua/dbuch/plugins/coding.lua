@@ -290,4 +290,23 @@ return {
       vim.g.matchup_matchparen_deferred_show_delay = 100
     end,
   },
+  {
+    'olimorris/codecompanion.nvim',
+    event = 'VeryLazy',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-treesitter/nvim-treesitter',
+    },
+    opts = {
+      strategies = {
+        -- Change the default chat adapter
+        chat = {
+          adapter = 'anthropic',
+        },
+        inline = {
+          adapter = 'anthropic',
+        },
+      },
+    },
+  },
 }

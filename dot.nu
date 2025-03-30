@@ -46,7 +46,11 @@ def link [target_path: path, link_path: path] {
 
   log $"Creating: ($link_path) -> ($target_path)"
   try { 
-    ln -sr $target_path $link_path
+    if ($nu.os-info.name == "windows") {
+      mklink $link_path $target_path | into string | complete
+    } else {
+      ln -sr $target_path $link_path
+    }
   } catch {
     log $"Failed: ($link_path) -> ($target_path)"
   }
@@ -64,12 +68,12 @@ def link_all [links: record] {
 
   for e in ($links | transpose source dest) {
     let source_path = $env.FILE_PWD | path join $e.source
-    let link_path = $env.FILE_PWD | path join $e.source
+    let link_path = $env.HOME | path join $e.dest
 
     if (validate $source_path $link_path) {
-      print $"✅ ($e.source) -> ($e.dest)"
+      print $"✅ ($e.dest) -> ($e.source)"
     } else {
-      link $source_path $link_path
+      # link $source_path $link_path
     }
   }
 }

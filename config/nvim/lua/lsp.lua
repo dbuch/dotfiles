@@ -63,7 +63,7 @@ local enabled_lsps = {
   'ruff',
   'zls',
 
-  -- 'omnisharp',
+  'omnisharp',
   'wgsl',
 
   -- Writing

@@ -81,5 +81,6 @@ $env.NU_PLUGIN_DIRS = [
     ($env.NUPM_HOME | path join "modules")
 ]
 
-$env.CARAPACE_BRIDGES = "zsh,fish,bash,inshellisence"
+$env.CARAPACE_LENIENT = 1
+$env.CARAPACE_BRIDGES = "fish,zsh,bash"
 $env.SHELL = $nu.current-exe

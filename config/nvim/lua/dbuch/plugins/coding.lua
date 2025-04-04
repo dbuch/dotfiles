@@ -216,10 +216,15 @@ return {
       },
 
       sources = {
-        default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        default = { 'lazydev', 'lsp', 'codecompanion', 'path', 'snippets', 'buffer', 'markdown' },
         -- default = { 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
 
         providers = {
+          codecompanion = {
+            enabled = true,
+            module = 'codecompanion.providers.completion.blink',
+            name = 'CodeCompanion',
+          },
           lazydev = {
             name = 'LazyDev',
             module = 'lazydev.integrations.blink',
@@ -291,6 +296,11 @@ return {
     end,
   },
   {
+    'vxpm/ferris.nvim',
+    ft = 'rust',
+    opts = {},
+  },
+  {
     'olimorris/codecompanion.nvim',
     event = 'VeryLazy',
     dependencies = {
@@ -301,10 +311,10 @@ return {
       strategies = {
         -- Change the default chat adapter
         chat = {
-          adapter = 'anthropic',
+          adapter = 'gemini',
         },
         inline = {
-          adapter = 'anthropic',
+          adapter = 'gemini',
         },
       },
     },

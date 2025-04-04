@@ -57,6 +57,7 @@ local enabled_lsps = {
   'lemminx', -- XML
 
   -- Programming
+  'rust_analyzer',
   'lua_ls',
   'clangd',
   'pyright',

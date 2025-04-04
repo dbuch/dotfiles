@@ -1,0 +1,3 @@
+return {
+  'gregorias/coop.nvim',
+}

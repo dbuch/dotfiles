@@ -115,7 +115,7 @@ return {
   {
     'saghen/blink.cmp',
     lazy = false,
-    version = 'v0.*',
+    version = 'v1.*',
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',

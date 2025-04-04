@@ -1,21 +1,8 @@
 local system = require('coop.vim').system
 local coop = require('coop')
-
-local function reload_workspace(bufnr)
-  local clients = vim.lsp.get_lsp_clients({ bufnr = bufnr, name = 'rust_analyzer' })
-  for _, client in ipairs(clients) do
-    vim.notify('Reloading Cargo Workspace')
-    client.request('rust-analyzer/reloadWorkspace', nil, function(err)
-      if err then
-        error(tostring(err))
-      end
-      vim.notify('Cargo workspace reloaded')
-    end, 0)
-  end
-end
+local uv = require('coop.uv')
 
 local iswin = vim.loop.os_uname().version:match('Windows')
-
 local function is_fs_root(path)
   if iswin then
     return path:match('^%a:$')
@@ -104,9 +91,9 @@ return {
       :await(5000, 20)
 
     local cargo_workspace_root
-    if result and result[1] then
-      result = vim.json.decode(table.concat(result, ''))
-      if result['workspace_root'] then
+    if result and result.stdout then
+      result = vim.json.decode(result.stdout)
+      if result then
         cargo_workspace_root = vim.fs.normalize(result['workspace_root'])
       end
     end
@@ -123,10 +110,5 @@ return {
     if config.settings and config.settings['rust-analyzer'] then
       init_params.initializationOptions = config.settings['rust-analyzer']
     end
-  end,
-  on_attach = function()
-    vim.api.nvim_buf_create_user_command(0, 'CargoReload', function()
-      reload_workspace(0)
-    end, { desc = 'Reload current cargo workspace' })
   end,
 }

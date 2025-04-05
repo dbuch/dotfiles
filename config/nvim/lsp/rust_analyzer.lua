@@ -84,19 +84,17 @@ return {
       cargo_crate_dir .. '/Cargo.toml',
     }
 
-    local result = coop
+    local cargo_workspace_root = coop
       .spawn(function()
-        return system(cmd)
+        local result = system(cmd)
+        if result and result.stdout then
+          result = vim.json.decode(result.stdout)
+          if result then
+            return vim.fs.normalize(result['workspace_root'])
+          end
+        end
       end)
       :await(5000, 20)
-
-    local cargo_workspace_root
-    if result and result.stdout then
-      result = vim.json.decode(result.stdout)
-      if result then
-        cargo_workspace_root = vim.fs.normalize(result['workspace_root'])
-      end
-    end
 
     done_callback(cargo_workspace_root or cargo_crate_dir)
   end,

@@ -45,6 +45,8 @@ $env.config = ($env.config? | default {} | merge {
   footer_mode: auto
   edit_mode: vi
 
+  highlight_resolved_externals: true
+
   menus: (source menus.nu)
   keybindings: (source keybindings.nu)
   hooks: (source hooks.nu)

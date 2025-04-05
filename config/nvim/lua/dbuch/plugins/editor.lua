@@ -12,7 +12,6 @@ return {
         move_up = '<A-k>',
         move_down = '<A-j>',
       },
-
       options = {
         use_cache = true,
       },
@@ -65,8 +64,11 @@ return {
   },
   {
     'folke/trouble.nvim',
-    version = '*',
-    opts = { use_diagnostic_signs = true },
+    ---@module 'trouble'
+    ---@type trouble.Config
+    opts = {
+      use_diagnostic_signs = true,
+    },
     cmd = { 'TroubleToggle', 'Trouble' },
   },
   {

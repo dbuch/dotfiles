@@ -64,6 +64,7 @@ return {
       -- 'nvim-treesitter/nvim-treesitter-textobjects',
       { 'nushell/tree-sitter-nu' },
     },
+    opts_extend = { 'ensure_installed' },
     opts = {
       ensure_installed = ensure_installed(),
       auto_install = true,

@@ -67,6 +67,9 @@ local enabled_lsps = {
   'omnisharp',
   'wgsl',
 
+  -- Web Programming
+  'ts_ls',
+
   -- Writing
   'tinymist',
 }

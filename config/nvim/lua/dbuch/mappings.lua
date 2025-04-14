@@ -39,22 +39,6 @@ map('n', 'sw', function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('saiw', false, false, false), 'm', false)
 end, { expr = true })
 
--- NvimTrait.on_lsp_attach(function(client, buf)
---   map('n', 'ca', vim.lsp.buf.code_action, { silent = true, buffer = buf })
---   map('n', 'cd', ':Trouble lsp_definitions<CR>', { silent = true, buffer = buf })
---   map('n', 'cn', vim.lsp.buf.rename, { silent = true, buffer = buf })
---   map('n', 't', ':Trouble diagnostics toggle<CR>', { silent = true, buffer = buf })
---   map('n', 'cr', ':Trouble lsp toggle<CR>', { silent = true, buffer = buf })
---   map('n', '<leader>i', function()
---     if client.server_capabilities.inlayHintProvider then
---       local enabled = require('dbuch.traits.nvim').inlay_hint_toggle()
---       vim.notify(string.format('%s %s inlay hints!', client.name, enabled and 'enabled' or ' disabled'))
---     else
---       vim.notify(client.name .. ' doesnt support inlay hints')
---     end
---   end, { silent = true, buffer = buf })
--- end)
-
 map('n', '<leader>w', '<esc>:w<CR>', { noremap = false })
 
 -- Clear search

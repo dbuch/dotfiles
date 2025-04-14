@@ -53,9 +53,11 @@ vim.opt.diffopt:append({
 vim.opt.timeoutlen = 300
 vim.opt.updatetime = 200
 
-vim.opt.undolevels = 10000
 vim.opt.undofile = true
+vim.opt.undolevels = 1000
+vim.opt.undoreload = 10000
 vim.opt.undodir = require('dbuch.env').undo_dir
+
 vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.splitkeep = 'screen'

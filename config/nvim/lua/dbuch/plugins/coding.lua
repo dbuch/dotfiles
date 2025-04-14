@@ -216,7 +216,7 @@ return {
       },
 
       sources = {
-        default = { 'lazydev', 'lsp', 'codecompanion', 'path', 'snippets', 'buffer', 'markdown' },
+        default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
         -- default = { 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
 
         providers = {
@@ -317,6 +317,19 @@ return {
           adapter = 'gemini',
         },
       },
+    },
+  },
+  {
+    'jiaoshijie/undotree',
+    dependencies = 'nvim-lua/plenary.nvim',
+    opts = {
+      float_diff = true,
+      window = {
+        winblend = 5,
+      },
+    },
+    keys = { -- load the plugin only when using it's keybinding:
+      { '<leader>u', "<cmd>lua require('undotree').toggle()<cr>" },
     },
   },
 }

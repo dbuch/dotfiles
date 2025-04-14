@@ -222,15 +222,15 @@ return {
       },
 
       sources = {
-        default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
-        -- default = { 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        --default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
+        default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
 
         providers = {
-          codecompanion = {
-            enabled = true,
-            module = 'codecompanion.providers.completion.blink',
-            name = 'CodeCompanion',
-          },
+          -- codecompanion = {
+          --   enabled = true,
+          --   module = 'codecompanion.providers.completion.blink',
+          --   name = 'CodeCompanion',
+          -- },
           lazydev = {
             name = 'LazyDev',
             module = 'lazydev.integrations.blink',

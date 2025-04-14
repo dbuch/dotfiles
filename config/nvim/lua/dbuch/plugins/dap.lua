@@ -2,15 +2,6 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    'dbuch/cargo-meta.nvim',
-    dev = true,
-    dependencies = {
-      'gregorias/coop.nvim',
-    },
-    opts = {},
-    lazy = false,
-  },
-  {
     'mfussenegger/nvim-dap',
     keys = {
       { '<leader>d', '', desc = '+debug', mode = { 'n', 'v' } },

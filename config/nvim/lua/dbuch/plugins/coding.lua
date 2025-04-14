@@ -114,11 +114,17 @@ return {
   },
   {
     'saghen/blink.cmp',
-    lazy = false,
+    --lazy = false,
+    event = 'InsertEnter',
     version = 'v1.*',
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',
+    },
+    opts_extend = {
+      'sources.completion.enabled_providers',
+      'sources.compat',
+      'sources.default',
     },
     ---@module 'blink.cmp'
     ---@type blink.cmp.Config
@@ -300,25 +306,25 @@ return {
     ft = 'rust',
     opts = {},
   },
-  {
-    'olimorris/codecompanion.nvim',
-    event = 'VeryLazy',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      'nvim-treesitter/nvim-treesitter',
-    },
-    opts = {
-      strategies = {
-        -- Change the default chat adapter
-        chat = {
-          adapter = 'gemini',
-        },
-        inline = {
-          adapter = 'gemini',
-        },
-      },
-    },
-  },
+  -- {
+  --   'olimorris/codecompanion.nvim',
+  --   event = 'VeryLazy',
+  --   dependencies = {
+  --     'nvim-lua/plenary.nvim',
+  --     'nvim-treesitter/nvim-treesitter',
+  --   },
+  --   opts = {
+  --     strategies = {
+  --       -- Change the default chat adapter
+  --       chat = {
+  --         adapter = 'gemini',
+  --       },
+  --       inline = {
+  --         adapter = 'gemini',
+  --       },
+  --     },
+  --   },
+  -- },
   {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',

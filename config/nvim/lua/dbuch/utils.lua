@@ -47,10 +47,6 @@ function M.smart_quit()
     return
   end
 
-  if #loaded_buffers - 1 <= 1 then
-    vim.notify('Last buf')
-  end
-
   -- local valid_buf = function(window)
   --   if not vim.api.nvim_win_is_valid(window) then
   --     return false

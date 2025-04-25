@@ -41,17 +41,6 @@ end
 ---@type LazyPluginSpec[]
 return {
   {
-    'nvim-treesitter/nvim-treesitter-context',
-    event = 'VeryLazy',
-    --lazy = false,
-    opts = {
-      enable = true,
-      max_lines = 3,
-      trim_scope = 'outer',
-    },
-    config = true,
-  },
-  {
     'nvim-treesitter/nvim-treesitter',
     version = false,
     build = ':TSUpdate',
@@ -61,7 +50,14 @@ return {
       require('nvim-treesitter.query_predicates')
     end,
     dependencies = {
-      -- 'nvim-treesitter/nvim-treesitter-textobjects',
+      {
+        'nvim-treesitter/nvim-treesitter-context',
+        opts = {
+          enable = true,
+          max_lines = 3,
+          trim_scope = 'outer',
+        },
+      },
       { 'nushell/tree-sitter-nu' },
     },
     opts_extend = { 'ensure_installed' },

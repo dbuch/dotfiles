@@ -322,6 +322,7 @@ return {
       vim.g.matchup_matchparen_deferred = 1
       vim.g.matchup_matchparen_deferred_show_delay = 100
     end,
+    opts = {},
   },
   {
     'vxpm/ferris.nvim',

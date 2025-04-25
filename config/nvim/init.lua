@@ -9,7 +9,6 @@ _G.safe_require = function(modname)
 end
 
 _G.Utils = require('dbuch.utils')
-
 -- Early Configuration
 vim.g.loaded_netrwPlugin = 1
 vim.g.loaded_tutor_mode_plugin = 1

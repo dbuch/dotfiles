@@ -45,7 +45,7 @@ def link [target_path: path, link_path: path] {
   rm -f $link_path
 
   log $"Creating: ($link_path) -> ($target_path)"
-  try { 
+  try {
     if ($nu.os-info.name == "windows") {
       mklink $link_path $target_path | into string | complete
     } else {
@@ -77,4 +77,3 @@ def link_all [links: record] {
     }
   }
 }
-

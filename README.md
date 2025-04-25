@@ -14,6 +14,8 @@ neovim
 ripgrep
 git
 
+lsp's
+
 TODO?
 
 # Install

@@ -6,7 +6,7 @@ return {
   {
     'echasnovski/mini.pairs',
     version = false,
-    event = 'VeryLazy',
+    event = 'InsertEnter',
     opts = {
       modes = { insert = true, command = true, terminal = false },
       skip_next = [=[[%w%%%'%[%"%.%`%$]]=],
@@ -18,8 +18,30 @@ return {
   {
     'echasnovski/mini.comment',
     version = false,
-    event = 'VeryLazy',
-    opts = {},
+    --event = 'VeryLazy',
+    keys = {
+      {
+        'gc',
+        'gcc',
+      },
+    },
+    dependencies = {
+      {
+        'JoosepAlviste/nvim-ts-context-commentstring',
+        opts = {
+          enable = true,
+          enable_autocmd = false,
+        },
+      },
+    },
+    opts = {
+      options = {
+        custom_commentstring = function()
+          return require('ts_context_commentstring.internal').calculate_commentstring()
+            or vim.bo.commentstring
+        end,
+      },
+    },
   },
   {
     'echasnovski/mini.align',

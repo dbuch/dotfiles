@@ -140,28 +140,6 @@ M.has_words_before = function()
     and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match('%s') == nil
 end
 
-function M.init_printf()
-  _G.printf = function(...)
-    print(string.format(...))
-  end
-
-  local orig_print = print
-
-  function _G.print(...)
-    if vim.in_fast_event() then
-      return orig_print(...)
-    end
-    for _, x in ipairs({ ... }) do
-      if type(x) == 'string' then
-        vim.api.nvim_out_write(x)
-      else
-        vim.api.nvim_out_write(vim.inspect(x, { newline = ' ', indent = '' }))
-      end
-    end
-    vim.api.nvim_out_write('\n')
-  end
-end
-
 function M.inlay_hint_toggle()
   local toggle_value = not vim.lsp.inlay_hint.is_enabled({})
   vim.lsp.inlay_hint.enable(toggle_value)

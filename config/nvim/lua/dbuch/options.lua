@@ -1,9 +1,10 @@
 vim.opt.backup = true
 vim.opt.backupdir:remove('.')
 vim.opt.breakindent = true
---TODO  o.clipboard      = 'unnamedplus' Fix this when wl-copy behaves
---OR https://github.com/neovim/neovim/pull/21091
+--vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus'
 vim.opt.expandtab = true
+
+vim.opt.confirm = true
 
 vim.opt.hidden = true
 vim.opt.ignorecase = true
@@ -27,10 +28,12 @@ vim.opt.swapfile = false
 vim.opt.termguicolors = true
 vim.opt.textwidth = 80
 vim.opt.virtualedit = 'block'
-vim.opt.winblend = 6
-vim.opt.pumblend = 6
+vim.opt.winblend = 4
+vim.opt.pumblend = 4
 vim.opt.pumheight = 10
 vim.opt.wrap = false
+
+vim.opt.wildmode = 'longest:full,full'
 
 vim.opt.shortmess:append({ W = true, I = true, c = true, C = true })
 vim.opt.completeopt:append({
@@ -62,6 +65,8 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.splitkeep = 'screen'
 
+-- formating
+vim.g.autoformat = true
 vim.opt.formatoptions:append({
   r = true, -- Automatically insert comment leader after <Enter> in Insert mode.
   o = true, -- Automatically insert comment leader after 'o' or 'O' in Normal mode.
@@ -70,16 +75,27 @@ vim.opt.formatoptions:append({
   n = true, -- Recognise lists
 })
 
+vim.opt.linebreak = true
+
 vim.opt.cmdheight = 0
 vim.opt.laststatus = 3
 vim.opt.showmode = false
 vim.opt.showcmd = false
 
+
 -- Folding
 vim.g.sh_fold_enabled = 1
 
-vim.opt.fillchars =
-  { eob = ' ', diff = ' ', foldopen = '', foldclose = '', foldsep = ' ', fold = ' ' }
+--stylua: ignore
+vim.opt.fillchars = {
+  foldopen  = "",
+  foldclose = "",
+  fold      = " ",
+  foldsep   = " ",
+  diff      = "╱",
+  eob       = " ",
+}
+
 -- vim.opt.foldcolumn = 'auto:0'
 vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 99

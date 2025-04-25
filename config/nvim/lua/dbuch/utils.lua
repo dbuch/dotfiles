@@ -2,10 +2,6 @@ local M = {}
 
 M.root = require('dbuch.traits.root')
 
-function M.notify(msg)
-  vim.notify(msg)
-end
-
 ---@return boolean
 M.is_windows = jit.os:find('Windows')
 
@@ -84,7 +80,6 @@ function string.ellipsize_at(s, maxwidth, ellipsis_char)
     ellipsis_char = ellipsis_char or '…'
     return vim.fn.strcharpart(s, 0, maxwidth) .. ellipsis_char
   end
-
   return s
 end
 

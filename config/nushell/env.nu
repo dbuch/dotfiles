@@ -74,7 +74,7 @@ $env.NU_LIB_DIRS = [
     ($nu.default-config-dir)
     ($nu.default-config-dir | path join "scripts")
     ($nu.default-config-dir | path join "modules")
-    
+
 ]
 
 $env.NU_PLUGIN_DIRS = [

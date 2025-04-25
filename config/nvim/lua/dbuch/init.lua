@@ -3,8 +3,6 @@ local NvimTrait = require('dbuch.traits.nvim')
 safe_require('dbuch.options')
 safe_require('dbuch.mappings')
 
-NvimTrait.init_printf()
-
 ---@class DevSpec
 ---@field path string
 ---@field patterns string[]

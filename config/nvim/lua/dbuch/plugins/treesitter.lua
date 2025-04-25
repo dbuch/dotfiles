@@ -98,7 +98,6 @@ return {
         enable = true,
         disable = { 'rst', 'make' },
       },
-      context_commentstring = { enable = true, enable_autocmd = false },
       injections = {
         enable = true,
       },

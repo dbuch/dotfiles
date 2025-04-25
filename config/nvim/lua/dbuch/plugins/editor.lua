@@ -177,7 +177,7 @@ return {
         vim.cmd('Lazy load mini.colors')
       end, {})
     end,
-    lazy = true,
+    cmd = 'LoadMiniColors',
     version = false,
     config = function()
       require('mini.colors').setup()
@@ -206,10 +206,65 @@ return {
         preview = false,
       },
     },
+    config = function(_, opts)
+      local minifiles = require('mini.files')
+      minifiles.setup(opts)
+
+      -- Keep track of when the explorer is open to disable format on save.
+      local minifiles_explorer_group =
+        vim.api.nvim_create_augroup('mariasolos/minifiles_explorer', { clear = true })
+      vim.api.nvim_create_autocmd('User', {
+        group = minifiles_explorer_group,
+        pattern = 'MiniFilesExplorerOpen',
+        callback = function()
+          vim.g.minifiles_active = true
+        end,
+      })
+      vim.api.nvim_create_autocmd('User', {
+        group = minifiles_explorer_group,
+        pattern = 'MiniFilesExplorerClose',
+        callback = function()
+          vim.g.minifiles_active = false
+        end,
+      })
+
+      vim.api.nvim_create_autocmd('User', {
+        desc = 'Notify LSPs that a file was renamed',
+        pattern = 'MiniFilesActionRename',
+        callback = function(args)
+          local changes = {
+            files = {
+              {
+                oldUri = vim.uri_from_fname(args.data.from),
+                newUri = vim.uri_from_fname(args.data.to),
+              },
+            },
+          }
+          local will_rename_method, did_rename_method =
+            vim.lsp.protocol.Methods.workspace_willRenameFiles,
+            vim.lsp.protocol.Methods.workspace_didRenameFiles
+          local clients = vim.lsp.get_clients()
+          for _, client in ipairs(clients) do
+            if client:supports_method(will_rename_method) then
+              local res = client:request_sync(will_rename_method, changes, 1000, 0)
+              if res and res.result then
+                vim.lsp.util.apply_workspace_edit(res.result, client.offset_encoding)
+              end
+            end
+          end
+
+          for _, client in ipairs(clients) do
+            if client:supports_method(did_rename_method) then
+              client:notify(did_rename_method, changes)
+            end
+          end
+        end,
+      })
+    end,
   },
   {
     'echasnovski/mini.cursorword',
-    event = 'VeryLazy',
+    event = 'BufReadPost',
     version = false,
     opts = {},
   },
@@ -220,7 +275,12 @@ return {
   },
   {
     'lewis6991/whatthejump.nvim',
-    event = 'VeryLazy',
+    keys = {
+      { '<M-k>', 'Jump backwards' },
+      { '<M-j>', 'Jump forwards' },
+      { '<C-o>', 'Jump backwards' },
+      { '<C-o>', 'Jump forwards' },
+    },
     config = function()
       -- Jump backwards
       vim.keymap.set('n', '<M-k>', function()
@@ -257,10 +317,29 @@ return {
     },
   },
   {
-    'brenoprata10/nvim-highlight-colors',
-    cmd = { 'HighlightColors' },
-    opts = {},
+    'uga-rosa/ccc.nvim',
+    cmd = 'CccPick',
+    opts = function()
+      local ccc = require('ccc')
+
+      -- Use uppercase for hex codes.
+      ccc.output.hex.setup({ uppercase = true })
+      ccc.output.hex_short.setup({ uppercase = true })
+
+      return {
+        highlighter = {
+          auto_enable = true,
+          -- LSP causes the highlights to not cover the correct range.
+          lsp = false,
+        },
+      }
+    end,
   },
+  -- {
+  --   'brenoprata10/nvim-highlight-colors',
+  --   cmd = { 'HighlightColors' },
+  --   opts = {},
+  -- },
   {
     'rachartier/tiny-inline-diagnostic.nvim',
     event = 'VeryLazy', -- Or `LspAttach`

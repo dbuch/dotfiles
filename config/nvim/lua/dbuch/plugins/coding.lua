@@ -142,6 +142,17 @@ return {
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',
+      {
+        'zbirenbaum/copilot.lua',
+        opts = {
+          suggestion = {
+            enabled = false,
+          },
+          panel = {
+            enabled = false,
+          },
+        },
+      },
     },
     opts_extend = {
       'sources.completion.enabled_providers',
@@ -329,25 +340,25 @@ return {
     ft = 'rust',
     opts = {},
   },
-  -- {
-  --   'olimorris/codecompanion.nvim',
-  --   event = 'VeryLazy',
-  --   dependencies = {
-  --     'nvim-lua/plenary.nvim',
-  --     'nvim-treesitter/nvim-treesitter',
-  --   },
-  --   opts = {
-  --     strategies = {
-  --       -- Change the default chat adapter
-  --       chat = {
-  --         adapter = 'gemini',
-  --       },
-  --       inline = {
-  --         adapter = 'gemini',
-  --       },
-  --     },
-  --   },
-  -- },
+  {
+    'olimorris/codecompanion.nvim',
+    event = 'VeryLazy',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-treesitter/nvim-treesitter',
+    },
+    opts = {
+      strategies = {
+        -- Change the default chat adapter
+        chat = {
+          adapter = 'copilot',
+        },
+        inline = {
+          adapter = 'copilot',
+        },
+      },
+    },
+  },
   {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',

@@ -39,7 +39,7 @@ $env.config = ($env.config? | default {} | merge {
   bracketed_paste: true
   use_kitty_protocol: true
   cursor_shape: {
-    vi_insert: line 
+    vi_insert: line
     vi_normal: block
   }
   footer_mode: auto
@@ -53,6 +53,28 @@ $env.config = ($env.config? | default {} | merge {
   color_config: (source theme.nu)
 })
 
+$env.CARAPACE_LENIENT = 1
+$env.CARAPACE_BRIDGES = "fish,zsh,bash"
+$env.config.completions.external = {
+  enable: true
+  max_results: 100
+  completer: {|spans: list<string>|
+    let expanded_alias = (scope aliases | where name == $spans.0 | get -i expansion.0)
+
+    let tokens = (if $expanded_alias != null {
+      $spans | skip 1 | prepend ($expanded_alias | split row " " | take 1)
+    } else {
+      $spans
+    })
+
+    let cmd = $tokens.0 | str trim --left --char '^'
+
+    carapace $cmd nushell ...$tokens
+      | from json
+      | if ($in | default [] | where value =~ '^-.*ERR$' | is-empty) { $in } else { null }
+  }
+}
+
 $env.PROMPT_COMMAND = {|| create_left_prompt }
 $env.PROMPT_COMMAND_RIGHT = {|| create_right_prompt }
 
@@ -62,7 +84,6 @@ $env.PROMPT_INDICATOR_VI_NORMAL = {|| " ❮ " }
 $env.PROMPT_MULTILINE_INDICATOR = {|| "::: " }
 
 source "aliases.nu"
-source "completion.nu"
 
 use commands.nu psub
 

@@ -101,6 +101,26 @@
     event: { send: menu name: commands_menu }
   }
   {
+    name: nvim_tv_files
+    modifier: Alt
+    keycode: char_e
+    mode: [vi_normal vi_insert]
+    event: {
+      send: ExecuteHostCommand
+      cmd: "let f = (tv files); if ($f | str length) > 0 { nvim $f }"
+    }
+  }
+  {
+    name: nvim_tv_grep
+    modifier: Alt
+    keycode: char_g
+    mode: [vi_normal vi_insert]
+    event: {
+      send: ExecuteHostCommand
+      cmd: "let args = (tv text | split row ':'); if ($args | length) == 2 { nvim $args.0 +:($args.1) }"
+    }
+  }
+  {
     name: bookmarks
     modifier: Alt
     keycode: char_b

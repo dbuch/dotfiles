@@ -55,6 +55,7 @@ $env.config = ($env.config? | default {} | merge {
 
 $env.CARAPACE_LENIENT = 1
 $env.CARAPACE_BRIDGES = "fish,zsh,bash"
+
 $env.config.completions.external = {
   enable: true
   max_results: 100

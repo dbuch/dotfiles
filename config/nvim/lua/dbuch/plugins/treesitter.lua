@@ -42,8 +42,10 @@ end
 return {
   {
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master',
     version = false,
     build = ':TSUpdate',
+    -- lazy = false,
     event = { 'VeryLazy' },
     init = function(plugin)
       require('lazy.core.loader').add_to_rtp(plugin)

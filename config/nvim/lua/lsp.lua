@@ -69,6 +69,7 @@ local enabled_lsps = {
 
   -- Web Programming
   'ts_ls',
+  'denols',
 
   -- Writing
   'tinymist',

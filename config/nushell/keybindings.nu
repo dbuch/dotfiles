@@ -101,7 +101,7 @@
     event: { send: menu name: commands_menu }
   }
   {
-    name: nvim_tv_files
+    name: nvim_tv_find
     modifier: Alt
     keycode: char_e
     mode: [vi_normal vi_insert]

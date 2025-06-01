@@ -129,6 +129,13 @@ autocmd('User', {
   end,
 })
 
+NvimTrait.on_ts_attach(function(buffer, _lang)
+  require('dbuch.treesitter').attach(buffer)
+  vim.bo[buffer].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  vim.wo[0][0].foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+  vim.wo[0][0].foldmethod = 'expr'
+end)
+
 autocmd('User', {
   once = true,
   pattern = 'LazyVimStarted',

@@ -1,11 +1,15 @@
 ---@param modname string
 ---@return boolean|any
 _G.safe_require = function(modname)
-  local success, module = pcall(require, modname)
-  if success then
-    return module
+  --- @diagnostic disable-next-line: no-unknown
+  local ok, mod = xpcall(require, debug.traceback, modname)
+  if not ok then
+    vim.schedule(function()
+      error(mod)
+    end)
+    return nil
   end
-  return false
+  return mod
 end
 
 _G.Utils = require('dbuch.utils')

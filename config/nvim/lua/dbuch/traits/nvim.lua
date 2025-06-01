@@ -7,16 +7,12 @@ function M.augroup(name)
   return vim.api.nvim_create_augroup('dbuch_' .. name, { clear = true })
 end
 
----@param cb fun(parser:vim.treesitter.LanguageTree, buffer:integer)
+---@param cb fun(buffer:integer, lang:string?)
 function M.on_ts_attach(cb)
-  vim.api.nvim_create_autocmd('BufEnter', {
+  vim.api.nvim_create_autocmd('User', {
+    pattern = 'TSAttached',
     callback = function(args)
-      ---@type integer
-      local buffer = args.buf
-      local ok, parser = pcall(vim.treesitter.get_parser, buffer)
-      if ok and parser then
-        cb(parser, buffer)
-      end
+      cb(args.data.buf, args.data.lang)
     end,
   })
 end

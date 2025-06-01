@@ -41,25 +41,44 @@ end
 ---@type LazyPluginSpec[]
 return {
   {
+    'nvim-treesitter/nvim-treesitter-context',
+    event = { 'User TSAttached' },
+    opts = {
+      enable = true,
+      max_lines = 3,
+      trim_scope = 'outer',
+    },
+  },
+  {
     'nvim-treesitter/nvim-treesitter',
-    branch = 'master',
+    branch = 'main',
     version = false,
     build = ':TSUpdate',
-    -- lazy = false,
-    event = { 'VeryLazy' },
+    lazy = false,
+    -- event = { 'VeryLazy' },
     init = function(plugin)
-      require('lazy.core.loader').add_to_rtp(plugin)
-      require('nvim-treesitter.query_predicates')
+      vim.api.nvim_create_autocmd('FileType', {
+        callback = function(args)
+          if not vim.api.nvim_buf_is_valid(args.buf) then
+            return
+          end
+
+          if not pcall(vim.treesitter.start, args.buf) then
+            return
+          end
+          local ft = vim.bo.filetype
+          local lang = vim.treesitter.language.get_lang(ft)
+          vim.api.nvim_exec_autocmds(
+            'User',
+            { pattern = 'TSAttached', data = { buf = args.buf, lang = lang } }
+          )
+        end,
+      })
+
+      -- require('lazy.core.loader').add_to_rtp(plugin)
+      -- require('nvim-treesitter.query_predicates')
     end,
     dependencies = {
-      {
-        'nvim-treesitter/nvim-treesitter-context',
-        opts = {
-          enable = true,
-          max_lines = 3,
-          trim_scope = 'outer',
-        },
-      },
       { 'nushell/tree-sitter-nu' },
     },
     opts_extend = { 'ensure_installed' },
@@ -109,7 +128,7 @@ return {
       end,
     },
     config = function(_, opts)
-      require('nvim-treesitter.configs').setup(opts)
+      require('nvim-treesitter').install(opts.ensure_installed)
     end,
   },
 }

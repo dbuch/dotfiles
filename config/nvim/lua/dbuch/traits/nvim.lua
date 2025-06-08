@@ -7,12 +7,14 @@ function M.augroup(name)
   return vim.api.nvim_create_augroup('dbuch_' .. name, { clear = true })
 end
 
----@param cb fun(buffer:integer, lang:string?)
-function M.on_ts_attach(cb)
+---@param cb fun(buffer:integer, lang:string)
+function M.on_ts_filetype(cb)
   vim.api.nvim_create_autocmd('User', {
-    pattern = 'TSAttached',
+    pattern = 'TSFileType',
     callback = function(args)
-      cb(args.data.buf, args.data.lang)
+      local bufnr = args.data.buf
+      local lang = args.data.lang
+      cb(bufnr, lang)
     end,
   })
 end

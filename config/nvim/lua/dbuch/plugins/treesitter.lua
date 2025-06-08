@@ -42,7 +42,7 @@ end
 return {
   {
     'nvim-treesitter/nvim-treesitter-context',
-    event = { 'User TSAttached' },
+    event = { 'User TSFileType' },
     opts = {
       enable = true,
       max_lines = 3,
@@ -59,19 +59,20 @@ return {
     init = function(plugin)
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
-          if not vim.api.nvim_buf_is_valid(args.buf) then
-            return
+          ---@type integer
+          local bufnr = args.buf
+          local ft = vim.bo[bufnr].filetype
+          local lang = vim.treesitter.language.get_lang(ft)
+          if lang ~= nil then
+            vim.api.nvim_exec_autocmds(
+              'User',
+              { pattern = 'TSFileType', data = { buf = args.buf, lang = lang } }
+            )
           end
 
           if not pcall(vim.treesitter.start, args.buf) then
             return
           end
-          local ft = vim.bo.filetype
-          local lang = vim.treesitter.language.get_lang(ft)
-          vim.api.nvim_exec_autocmds(
-            'User',
-            { pattern = 'TSAttached', data = { buf = args.buf, lang = lang } }
-          )
         end,
       })
 

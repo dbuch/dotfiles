@@ -129,9 +129,15 @@ autocmd('User', {
   end,
 })
 
-NvimTrait.on_ts_attach(function(buffer, _lang)
-  require('dbuch.treesitter').attach(buffer)
-  vim.bo[buffer].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+NvimTrait.on_ts_filetype(function(bufnr, lang)
+  local parser = vim.treesitter.get_parser(bufnr, lang, { error = false })
+  if parser == nil then
+    return
+  end
+
+  require('dbuch.treesitter').attach(bufnr)
+
+  vim.bo[bufnr].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
   vim.wo[0][0].foldexpr = 'v:lua.vim.treesitter.foldexpr()'
   vim.wo[0][0].foldmethod = 'expr'
 end)

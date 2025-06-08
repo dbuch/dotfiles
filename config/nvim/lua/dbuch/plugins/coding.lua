@@ -142,17 +142,6 @@ return {
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',
-      {
-        'zbirenbaum/copilot.lua',
-        opts = {
-          suggestion = {
-            enabled = false,
-          },
-          panel = {
-            enabled = false,
-          },
-        },
-      },
     },
     opts_extend = {
       'sources.completion.enabled_providers',
@@ -171,7 +160,6 @@ return {
         },
       },
       completion = {
-
         trigger = {
           prefetch_on_insert = true,
         },
@@ -208,9 +196,6 @@ return {
               return ctx.mode ~= 'cmdline'
             end,
           },
-          -- selection = function(ctx)
-          --   return ctx.mode == 'cmdline' and 'auto_insert' or 'preselect'
-          -- end,
         },
         menu = {
           -- border = 'single'
@@ -259,16 +244,24 @@ return {
         default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
 
         providers = {
-          -- codecompanion = {
-          --   enabled = true,
-          --   module = 'codecompanion.providers.completion.blink',
-          --   name = 'CodeCompanion',
-          -- },
+          path = {
+            opts = {
+              get_cwd = function(_)
+                return vim.fn.getcwd()
+              end,
+            },
+          },
+          codecompanion = {
+            enabled = true,
+            module = 'codecompanion.providers.completion.blink',
+            name = 'CodeCompanion',
+          },
           lazydev = {
             name = 'LazyDev',
             module = 'lazydev.integrations.blink',
             score_offset = 100,
           },
+
           markdown = { name = 'RenderMarkdown', module = 'render-markdown.integ.blink' },
         },
       },
@@ -342,7 +335,12 @@ return {
   },
   {
     'olimorris/codecompanion.nvim',
-    event = 'VeryLazy',
+    cmd = {
+      'CodeCompanion',
+      'CodeCompanionChat',
+      'CodeCompanionActions',
+      'CodeCompanionCmd',
+    },
     dependencies = {
       'nvim-lua/plenary.nvim',
       'nvim-treesitter/nvim-treesitter',

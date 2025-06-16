@@ -142,6 +142,12 @@ return {
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',
+      'huijiro/blink-cmp-supermaven',
+      'supermaven-inc/supermaven-nvim',
+      opts = {
+        disable_inline_completion = true, -- disables inline completion for use with cmp
+        disable_keymaps = true, -- disables built in keymaps for more manual control
+      },
     },
     opts_extend = {
       'sources.completion.enabled_providers',
@@ -241,7 +247,7 @@ return {
 
       sources = {
         --default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
-        default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        default = { 'lazydev', 'lsp', 'path', 'supermaven', 'snippets', 'buffer', 'markdown' },
 
         providers = {
           path = {
@@ -251,11 +257,16 @@ return {
               end,
             },
           },
-          codecompanion = {
-            enabled = true,
-            module = 'codecompanion.providers.completion.blink',
-            name = 'CodeCompanion',
+          supermaven = {
+            name = 'supermaven',
+            module = 'blink-cmp-supermaven',
+            async = true,
           },
+          -- codecompanion = {
+          --   enabled = true,
+          --   module = 'codecompanion.providers.completion.blink',
+          --   name = 'CodeCompanion',
+          -- },
           lazydev = {
             name = 'LazyDev',
             module = 'lazydev.integrations.blink',
@@ -334,29 +345,40 @@ return {
     opts = {},
   },
   {
-    'olimorris/codecompanion.nvim',
+    'supermaven-inc/supermaven-nvim',
+    event = 'InsertEnter',
     cmd = {
-      'CodeCompanion',
-      'CodeCompanionChat',
-      'CodeCompanionActions',
-      'CodeCompanionCmd',
-    },
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      'nvim-treesitter/nvim-treesitter',
+      'SupermavenUseFree',
+      'SupermavenUsePro',
     },
     opts = {
-      strategies = {
-        -- Change the default chat adapter
-        chat = {
-          adapter = 'copilot',
-        },
-        inline = {
-          adapter = 'copilot',
-        },
-      },
+      disable_inline_codecompanion = true,
     },
   },
+  -- {
+  --   'olimorris/codecompanion.nvim',
+  --   cmd = {
+  --     'CodeCompanion',
+  --     'CodeCompanionChat',
+  --     'CodeCompanionActions',
+  --     'CodeCompanionCmd',
+  --   },
+  --   dependencies = {
+  --     'nvim-lua/plenary.nvim',
+  --     'nvim-treesitter/nvim-treesitter',
+  --   },
+  --   opts = {
+  --     strategies = {
+  --       -- Change the default chat adapter
+  --       chat = {
+  --         adapter = 'copilot',
+  --       },
+  --       inline = {
+  --         adapter = 'copilot',
+  --       },
+  --     },
+  --   },
+  -- },
   {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',

@@ -1,48 +1,37 @@
-local system = require('coop.vim').system
-local coop = require('coop')
-local uv = require('coop.uv')
+---@brief
+---
+--- https://github.com/rust-lang/rust-analyzer
+---
+--- rust-analyzer (aka rls 2.0), a language server for Rust
+---
+---
+--- See [docs](https://rust-analyzer.github.io/book/configuration.html) for extra settings. The settings can be used like this:
+--- ```lua
+--- vim.lsp.config('rust_analyzer', {
+---   settings = {
+---     ['rust-analyzer'] = {
+---       diagnostics = {
+---         enable = false;
+---       }
+---     }
+---   }
+--- })
+--- ```
+---
+--- Note: do not set `init_options` for this LS config, it will be automatically populated by the contents of settings["rust-analyzer"] per
+--- https://github.com/rust-lang/rust-analyzer/blob/eb5da56d839ae0a9e9f50774fa3eb78eb0964550/docs/dev/lsp-extensions.md?plain=1#L26.
 
-local iswin = vim.loop.os_uname().version:match('Windows')
-local function is_fs_root(path)
-  if iswin then
-    return path:match('^%a:$')
-  else
-    return path == '/'
+local function reload_workspace(bufnr)
+  local clients = vim.lsp.get_clients({ bufnr = bufnr, name = 'rust_analyzer' })
+  for _, client in ipairs(clients) do
+    vim.notify('Reloading Cargo Workspace')
+    client.request('rust-analyzer/reloadWorkspace', nil, function(err)
+      if err then
+        error(tostring(err))
+      end
+      vim.notify('Cargo workspace reloaded')
+    end, 0)
   end
-end
-
-local function traverse_parents(path, cb)
-  path = vim.loop.fs_realpath(path)
-  local dir = path
-  -- Just in case our algo is buggy, don't infinite loop.
-  for _ = 1, 100 do
-    dir = vim.fs.dirname(dir)
-    if not dir then
-      return
-    end
-    -- If we can't ascend further, then stop looking.
-    if cb(dir, path) then
-      return dir, path
-    end
-    if is_fs_root(dir) then
-      break
-    end
-  end
-end
-
---- This can be replaced with `vim.fs.relpath` once minimum neovim version is at least 0.11.
-local function is_descendant(root, path)
-  if not path then
-    return false
-  end
-
-  local function cb(dir, _)
-    return dir == root
-  end
-
-  local dir, _ = traverse_parents(path, cb)
-
-  return dir == root
 end
 
 local function is_library(fname)
@@ -55,8 +44,8 @@ local function is_library(fname)
   local toolchains = rustup_home .. '/toolchains'
 
   for _, item in ipairs({ toolchains, registry, git_registry }) do
-    if is_descendant(item, fname) then
-      local clients = vim.lsp.get_lsp_clients({ name = 'rust_analyzer' })
+    if vim.fs.relpath(item, fname) then
+      local clients = vim.lsp.get_clients({ name = 'rust_analyzer' })
       return #clients > 0 and clients[#clients].config.root_dir or nil
     end
   end
@@ -65,14 +54,24 @@ end
 return {
   cmd = { 'rust-analyzer' },
   filetypes = { 'rust' },
-  root_dir = function(bufnr, done_callback)
+  root_dir = function(bufnr, on_dir)
     local fname = vim.api.nvim_buf_get_name(bufnr)
-    local reuse_active = is_library(fname)
-    if reuse_active then
-      return reuse_active
+    local reused_dir = is_library(fname)
+    if reused_dir then
+      on_dir(reused_dir)
+      return
     end
 
-    local cargo_crate_dir = vim.fs.root(0, 'Cargo.toml')
+    local cargo_crate_dir = vim.fs.root(fname, { 'Cargo.toml' })
+    local cargo_workspace_root
+
+    if cargo_crate_dir == nil then
+      on_dir(
+        vim.fs.root(fname, { 'rust-project.json' })
+          or vim.fs.dirname(vim.fs.find('.git', { path = fname, upward = true })[1])
+      )
+      return
+    end
 
     local cmd = {
       'cargo',
@@ -84,19 +83,28 @@ return {
       cargo_crate_dir .. '/Cargo.toml',
     }
 
-    local cargo_workspace_root = coop
-      .spawn(function()
-        local result = system(cmd)
-        if result and result.stdout then
-          result = vim.json.decode(result.stdout)
-          if result then
-            return vim.fs.normalize(result['workspace_root'])
+    vim.system(cmd, { text = true }, function(output)
+      if output.code == 0 then
+        if output.stdout then
+          local result = vim.json.decode(output.stdout)
+          if result['workspace_root'] then
+            cargo_workspace_root = vim.fs.normalize(result['workspace_root'])
           end
         end
-      end)
-      :await(5000, 20)
 
-    done_callback(cargo_workspace_root or cargo_crate_dir)
+        on_dir(cargo_workspace_root or cargo_crate_dir)
+      else
+        vim.schedule(function()
+          vim.notify(
+            ('[rust_analyzer] cmd failed with code %d: %s\n%s'):format(
+              output.code,
+              cmd,
+              output.stderr
+            )
+          )
+        end)
+      end
+    end)
   end,
   capabilities = {
     experimental = {
@@ -108,5 +116,10 @@ return {
     if config.settings and config.settings['rust-analyzer'] then
       init_params.initializationOptions = config.settings['rust-analyzer']
     end
+  end,
+  on_attach = function()
+    vim.api.nvim_buf_create_user_command(0, 'LspCargoReload', function()
+      reload_workspace(0)
+    end, { desc = 'Reload current cargo workspace' })
   end,
 }

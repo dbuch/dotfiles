@@ -102,7 +102,8 @@ autocmd('LspAttach', {
       return
     end
     local root = client.config.root_dir ---@type string
-    if root ~= vim.uv.cwd() then
+    local current_cwd = vim.fn.getcwd()
+    if root ~= current_cwd then
       if vim.fn.chdir(root) ~= '' then
         ---@type RooterCallbackArgs
         local data = {
@@ -130,11 +131,6 @@ autocmd('User', {
 })
 
 NvimTrait.on_ts_filetype(function(bufnr, lang)
-  local parser = vim.treesitter.get_parser(bufnr, lang, { error = false })
-  if parser == nil then
-    return
-  end
-
   require('dbuch.treesitter').attach(bufnr)
 
   vim.bo[bufnr].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"

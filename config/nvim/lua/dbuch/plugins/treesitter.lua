@@ -61,17 +61,19 @@ return {
         callback = function(args)
           ---@type integer
           local bufnr = args.buf
+
+          if not pcall(vim.treesitter.start, args.buf) then
+            return
+          end
+
           local ft = vim.bo[bufnr].filetype
           local lang = vim.treesitter.language.get_lang(ft)
+
           if lang ~= nil then
             vim.api.nvim_exec_autocmds(
               'User',
               { pattern = 'TSFileType', data = { buf = args.buf, lang = lang } }
             )
-          end
-
-          if not pcall(vim.treesitter.start, args.buf) then
-            return
           end
         end,
       })

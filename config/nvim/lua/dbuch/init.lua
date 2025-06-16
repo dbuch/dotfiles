@@ -1,4 +1,5 @@
 local NvimTrait = require('dbuch.traits.nvim')
+NvimTrait.lazy_notify()
 
 safe_require('dbuch.options')
 safe_require('dbuch.mappings')

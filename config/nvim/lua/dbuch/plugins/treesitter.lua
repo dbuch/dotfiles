@@ -81,9 +81,6 @@ return {
       -- require('lazy.core.loader').add_to_rtp(plugin)
       -- require('nvim-treesitter.query_predicates')
     end,
-    dependencies = {
-      { 'nushell/tree-sitter-nu' },
-    },
     opts_extend = { 'ensure_installed' },
     opts = {
       ensure_installed = ensure_installed(),

@@ -8,3 +8,5 @@ window-padding-x = 0
 window-padding-y = 0
 maximize = true
 command = nu
+
+unfocused-split-opacity=1.0

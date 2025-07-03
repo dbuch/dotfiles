@@ -1,3 +1,5 @@
+vim.loader.enable()
+
 ---@param modname string
 ---@return boolean|any
 _G.safe_require = function(modname)
@@ -28,8 +30,6 @@ vim.g.loaded_ruby_provider = 0
 
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
-
-vim.loader.enable()
 
 -- Bootstrap
 ---@type string

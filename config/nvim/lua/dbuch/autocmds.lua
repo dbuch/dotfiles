@@ -149,3 +149,9 @@ autocmd('User', {
     })
   end,
 })
+
+autocmd('VimEnter', {
+  callback = function(_args)
+    vim.cmd('clearjumps')
+  end,
+})

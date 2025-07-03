@@ -45,33 +45,10 @@ return {
   },
   {
     'echasnovski/mini.align',
-    version = false,
-    keys = function(_, keys)
-      local plugin = require('lazy.core.config').spec.plugins['mini.align']
-      local opts = require('lazy.core.plugin').values(plugin, 'opts', false)
-      local mappings = {
-        { opts.mappings.start, desc = 'Start align', mode = { 'n', 'v' } },
-        {
-          opts.mappings.start_with_preview,
-          desc = 'Start align with Preview',
-          mode = { 'n', 'v' },
-        },
-      }
-      return vim.list_extend(
-        vim
-          .iter(mappings)
-          :filter(function(m)
-            return m[1] and #m[1] > 0
-          end)
-          :totable(),
-        keys
-      )
-    end,
-    opts = {
-      mappings = {
-        start = 'ga',
-        start_with_preview = 'gA',
-      },
+    opts = {},
+    keys = {
+      { 'ga', mode = { 'n', 'v' } },
+      { 'gA', mode = { 'n', 'v' } },
     },
   },
   {
@@ -142,11 +119,17 @@ return {
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'echasnovski/mini.icons',
-      'huijiro/blink-cmp-supermaven',
-      'supermaven-inc/supermaven-nvim',
-      opts = {
-        disable_inline_completion = true, -- disables inline completion for use with cmp
-        disable_keymaps = true, -- disables built in keymaps for more manual control
+      {
+        'supermaven-inc/supermaven-nvim',
+        dev = true,
+        opts = {
+          disable_inline_completion = true, -- disables inline completion for use with cmp
+          disable_keymaps = true, -- disables built in keymaps for more manual control
+          register_cmp = false,
+        },
+      },
+      {
+        'huijiro/blink-cmp-supermaven',
       },
     },
     opts_extend = {
@@ -168,6 +151,7 @@ return {
       completion = {
         trigger = {
           prefetch_on_insert = true,
+          show_on_backspace = true,
         },
 
         documentation = {
@@ -177,7 +161,7 @@ return {
           treesitter_highlighting = true,
           window = {
             max_width = math.min(80, vim.o.columns),
-            border = 'single',
+            border = 'padded',
           },
         },
 
@@ -295,7 +279,7 @@ return {
         ['<A-j>'] = { 'select_next', 'fallback' },
         ['<A-k>'] = { 'select_prev', 'fallback' },
 
-        ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+        ['<C-k>'] = { 'show', 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'hide', 'fallback' },
 
         ['<Tab>'] = {
@@ -344,41 +328,6 @@ return {
     ft = 'rust',
     opts = {},
   },
-  {
-    'supermaven-inc/supermaven-nvim',
-    event = 'InsertEnter',
-    cmd = {
-      'SupermavenUseFree',
-      'SupermavenUsePro',
-    },
-    opts = {
-      disable_inline_codecompanion = true,
-    },
-  },
-  -- {
-  --   'olimorris/codecompanion.nvim',
-  --   cmd = {
-  --     'CodeCompanion',
-  --     'CodeCompanionChat',
-  --     'CodeCompanionActions',
-  --     'CodeCompanionCmd',
-  --   },
-  --   dependencies = {
-  --     'nvim-lua/plenary.nvim',
-  --     'nvim-treesitter/nvim-treesitter',
-  --   },
-  --   opts = {
-  --     strategies = {
-  --       -- Change the default chat adapter
-  --       chat = {
-  --         adapter = 'copilot',
-  --       },
-  --       inline = {
-  --         adapter = 'copilot',
-  --       },
-  --     },
-  --   },
-  -- },
   {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',

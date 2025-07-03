@@ -82,7 +82,6 @@ vim.opt.laststatus = 3
 vim.opt.showmode = false
 vim.opt.showcmd = false
 
-
 -- Folding
 vim.g.sh_fold_enabled = 1
 

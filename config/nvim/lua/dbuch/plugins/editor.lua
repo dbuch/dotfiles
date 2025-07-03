@@ -275,6 +275,7 @@ return {
   },
   {
     'lewis6991/whatthejump.nvim',
+    dev = true,
     keys = {
       { '<M-k>', 'Jump backwards' },
       { '<M-j>', 'Jump forwards' },
@@ -335,10 +336,64 @@ return {
       }
     end,
   },
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    opts = {
+      menu = {
+        width = vim.api.nvim_win_get_width(0) - 4,
+      },
+      settings = {
+        save_on_toggle = true,
+      },
+    },
+    keys = function()
+      local keys = {
+        {
+          '<leader>H',
+          function()
+            require('harpoon'):list():add()
+          end,
+          desc = 'Harpoon File',
+        },
+        {
+          '<leader>h',
+          function()
+            local harpoon = require('harpoon')
+            harpoon.ui:toggle_quick_menu(harpoon:list())
+          end,
+          desc = 'Harpoon Quick Menu',
+        },
+      }
+
+      for i = 1, 5 do
+        table.insert(keys, {
+          '<leader>' .. i,
+          function()
+            require('harpoon'):list():select(i)
+          end,
+          desc = 'Harpoon to File ' .. i,
+        })
+      end
+      return keys
+    end,
+  },
   -- {
-  --   'brenoprata10/nvim-highlight-colors',
-  --   cmd = { 'HighlightColors' },
-  --   opts = {},
+  --   'rachartier/tiny-code-action.nvim',
+  --   event = 'LspAttach',
+  --   opts = {
+  --     backend = 'vim',
+  --     picker = {
+  --       'buffer',
+  --       opts = {
+  --         hotkeys = true, -- Enable hotkeys for quick selection of actions
+  --         hotkeys_mode = 'sequential',
+  --         auto_preview = true, -- Enable or disable automatic preview
+  --         position = 'cursor', -- Position of the picker window
+  --         winborder = 'single', -- Border style for picker and preview windows
+  --       },
+  --     },
+  --   },
   -- },
   {
     'rachartier/tiny-inline-diagnostic.nvim',

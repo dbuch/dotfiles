@@ -271,9 +271,9 @@ return {
           easing = 'linear',
         },
       },
-      -- scope = { enabled = false },
-      -- statuscolumn = { enabled = true },
-      -- words = { enabled = true },
+      words = { enabled = false },
+      scope = { enabled = false },
+      statuscolumn = { enabled = false },
     },
   },
   {

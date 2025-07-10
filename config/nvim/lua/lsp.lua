@@ -23,7 +23,7 @@ on_attach(function(_client, _bufnr)
   end
 end, attach_augroup)
 
-on_attach(function(client, bufnr)
+on_attach(function(_client, bufnr)
   local map = vim.keymap.set
   map('n', 'ca', require('tiny-code-action').code_action, { silent = true, buffer = bufnr })
   map('n', 'cd', ':Trouble lsp_definitions<CR>', { silent = true, buffer = bufnr })

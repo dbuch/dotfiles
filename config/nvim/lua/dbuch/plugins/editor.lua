@@ -1,5 +1,3 @@
--- TODO: https://github.com/yetone/avante.nvim
-
 ---@module 'lazy'
 ---@type LazyPluginSpec[]
 return {
@@ -70,14 +68,6 @@ return {
       use_diagnostic_signs = true,
     },
     cmd = { 'TroubleToggle', 'Trouble' },
-  },
-  {
-    'akinsho/toggleterm.nvim',
-    cmd = 'ToggleTerm',
-    opts = {
-      shade_terminals = false,
-      shell = 'nu',
-    },
   },
   {
     'sindrets/diffview.nvim',
@@ -160,7 +150,6 @@ return {
         'K',
         function()
           local hovercraft = require('hovercraft')
-
           if hovercraft.is_visible() then
             hovercraft.enter_popup()
           else
@@ -212,7 +201,7 @@ return {
 
       -- Keep track of when the explorer is open to disable format on save.
       local minifiles_explorer_group =
-        vim.api.nvim_create_augroup('mariasolos/minifiles_explorer', { clear = true })
+        vim.api.nvim_create_augroup('dbuch/minifiles_explorer', { clear = true })
       vim.api.nvim_create_autocmd('User', {
         group = minifiles_explorer_group,
         pattern = 'MiniFilesExplorerOpen',
@@ -227,40 +216,63 @@ return {
           vim.g.minifiles_active = false
         end,
       })
-
+    end,
+  },
+  {
+    'folke/snacks.nvim',
+    priority = 1000,
+    lazy = false,
+    dependencies = {
+      'echasnovski/mini.icons',
+    },
+    init = function()
       vim.api.nvim_create_autocmd('User', {
-        desc = 'Notify LSPs that a file was renamed',
-        pattern = 'MiniFilesActionRename',
-        callback = function(args)
-          local changes = {
-            files = {
-              {
-                oldUri = vim.uri_from_fname(args.data.from),
-                newUri = vim.uri_from_fname(args.data.to),
-              },
-            },
-          }
-          local will_rename_method, did_rename_method =
-            vim.lsp.protocol.Methods.workspace_willRenameFiles,
-            vim.lsp.protocol.Methods.workspace_didRenameFiles
-          local clients = vim.lsp.get_clients()
-          for _, client in ipairs(clients) do
-            if client:supports_method(will_rename_method) then
-              local res = client:request_sync(will_rename_method, changes, 1000, 0)
-              if res and res.result then
-                vim.lsp.util.apply_workspace_edit(res.result, client.offset_encoding)
-              end
-            end
+        pattern = 'VeryLazy',
+        callback = function()
+          -- Setup some globals for debugging (lazy-loaded)
+          _G.dd = function(...)
+            Snacks.debug.inspect(...)
           end
-
-          for _, client in ipairs(clients) do
-            if client:supports_method(did_rename_method) then
-              client:notify(did_rename_method, changes)
-            end
+          _G.bt = function()
+            Snacks.debug.backtrace()
           end
+          vim.print = _G.dd -- Override print to use snacks for `:=` command
         end,
       })
     end,
+    ---@module 'snacks'
+    ---@type snacks.Config
+    opts = {
+      bigfile = { enabled = true },
+      input = { enabled = true },
+      terminal = { enabled = true },
+      rename = { enabled = true },
+      quickfile = { enabled = true },
+      styles = {
+        input = {
+          relative = 'cursor',
+          row = -3,
+          col = 0,
+        },
+      },
+      image = { enabled = true },
+      scroll = {
+        enabled = true,
+        animate = {
+          duration = { step = 8, total = 80 },
+          easing = 'linear',
+        },
+        -- faster animation when repeating scroll after delay
+        animate_repeat = {
+          delay = 100, -- delay in ms before using the repeat animation
+          duration = { step = 5, total = 50 },
+          easing = 'linear',
+        },
+      },
+      -- scope = { enabled = false },
+      -- statuscolumn = { enabled = true },
+      -- words = { enabled = true },
+    },
   },
   {
     'echasnovski/mini.cursorword',
@@ -378,23 +390,39 @@ return {
       return keys
     end,
   },
-  -- {
-  --   'rachartier/tiny-code-action.nvim',
-  --   event = 'LspAttach',
-  --   opts = {
-  --     backend = 'vim',
-  --     picker = {
-  --       'buffer',
-  --       opts = {
-  --         hotkeys = true, -- Enable hotkeys for quick selection of actions
-  --         hotkeys_mode = 'sequential',
-  --         auto_preview = true, -- Enable or disable automatic preview
-  --         position = 'cursor', -- Position of the picker window
-  --         winborder = 'single', -- Border style for picker and preview windows
-  --       },
-  --     },
-  --   },
-  -- },
+  {
+    'rachartier/tiny-code-action.nvim',
+    event = 'LspAttach',
+    dependencies = {
+      { 'nvim-lua/plenary.nvim' },
+      {
+        'folke/snacks.nvim',
+        opts = {
+          terminal = {},
+        },
+      },
+    },
+    opts = {
+      backend = 'vim',
+      picker = {
+        'buffer',
+        opts = {
+          hotkeys = true,
+          hotkeys_mode = function(titles, _used_hotkeys)
+            local t = {}
+            for i = 1, #titles do
+              t[i] = tostring(i)
+            end
+            return t
+          end,
+          auto_accept = true,
+          auto_preview = false,
+          position = 'cursor',
+          winborder = 'single',
+        },
+      },
+    },
+  },
   {
     'rachartier/tiny-inline-diagnostic.nvim',
     event = 'VeryLazy', -- Or `LspAttach`

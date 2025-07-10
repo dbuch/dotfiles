@@ -1,5 +1,5 @@
 return {
-  'gregorias/coop.nvim',
+  -- 'gregorias/coop.nvim',
   {
     'yarospace/lua-console.nvim',
     keys = {

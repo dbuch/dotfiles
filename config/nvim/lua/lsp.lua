@@ -25,7 +25,7 @@ end, attach_augroup)
 
 on_attach(function(client, bufnr)
   local map = vim.keymap.set
-  map('n', 'ca', vim.lsp.buf.code_action, { silent = true, buffer = bufnr })
+  map('n', 'ca', require('tiny-code-action').code_action, { silent = true, buffer = bufnr })
   map('n', 'cd', ':Trouble lsp_definitions<CR>', { silent = true, buffer = bufnr })
   map('n', 'cn', vim.lsp.buf.rename, { silent = true, buffer = bufnr })
   map('n', 't', ':Trouble diagnostics toggle<CR>', { silent = true, buffer = bufnr })
@@ -60,6 +60,7 @@ local enabled_lsps = {
   'rust_analyzer',
   'lua_ls',
   'clangd',
+
   'pyright',
   'ruff',
   'zls',

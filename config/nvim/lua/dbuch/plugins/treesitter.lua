@@ -41,15 +41,6 @@ end
 ---@type LazyPluginSpec[]
 return {
   {
-    'nvim-treesitter/nvim-treesitter-context',
-    event = { 'User TSFileType' },
-    opts = {
-      enable = true,
-      max_lines = 3,
-      trim_scope = 'outer',
-    },
-  },
-  {
     'nvim-treesitter/nvim-treesitter',
     branch = 'main',
     version = false,

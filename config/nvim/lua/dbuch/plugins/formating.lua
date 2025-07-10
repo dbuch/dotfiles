@@ -31,7 +31,6 @@ return {
         -- sh = { 'shfmt' },
         -- typescript = { 'prettier', name = 'dprint', timeout_ms = 500, lsp_format = 'fallback' },
         -- typescriptreact = { 'prettier', name = 'dprint', timeout_ms = 500, lsp_format = 'fallback' },
-
         lua = { 'stylua' },
         python = { 'ruff_format' },
         toml = { 'taplo' },

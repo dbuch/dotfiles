@@ -58,11 +58,14 @@ autocmd('FileType', {
     'qf',
     'help',
     'man',
+    'git',
+    'qf',
     'notify',
     'lspinfo',
     'tsplayground',
     'query',
     'DressingSelect',
+    'Scratch',
   },
   callback = function(event)
     NvimTrait.set_close_with_q(event.buf)

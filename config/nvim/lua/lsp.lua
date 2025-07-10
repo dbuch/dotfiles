@@ -30,16 +30,6 @@ on_attach(function(client, bufnr)
   map('n', 'cn', vim.lsp.buf.rename, { silent = true, buffer = bufnr })
   map('n', 't', ':Trouble diagnostics toggle<CR>', { silent = true, buffer = bufnr })
   map('n', 'cr', ':Trouble lsp toggle<CR>', { silent = true, buffer = bufnr })
-  map('n', '<leader>i', function()
-    if client.server_capabilities.inlayHintProvider then
-      local enabled = require('dbuch.traits.nvim').inlay_hint_toggle()
-      vim.notify(
-        string.format('%s %s inlay hints!', client.name, enabled and 'enabled' or ' disabled')
-      )
-    else
-      vim.notify(client.name .. ' doesnt support inlay hints')
-    end
-  end, { silent = true, buffer = bufnr })
 end, attach_augroup)
 
 require('dbuch.diagnostic').config()

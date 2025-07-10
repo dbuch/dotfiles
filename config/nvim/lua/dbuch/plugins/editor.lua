@@ -237,6 +237,8 @@ return {
             Snacks.debug.backtrace()
           end
           vim.print = _G.dd -- Override print to use snacks for `:=` command
+
+          Snacks.toggle.inlay_hints():map('<leader>i')
         end,
       })
     end,

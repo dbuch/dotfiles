@@ -47,7 +47,7 @@ return {
     build = ':TSUpdate',
     lazy = false,
     -- event = { 'VeryLazy' },
-    init = function(plugin)
+    init = function()
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
           ---@type integer
@@ -80,27 +80,8 @@ return {
         enable = true,
         additional_vim_regex_highlighting = false,
       },
-      -- textobjects = {
-      --   enable = true,
-      --   lookahead = true,
-      --   lsp_interop = {
-      --     enable = true,
-      --   },
-      -- },
       indent = {
         'enabled',
-      },
-      incremental_selection = {
-        enable = true,
-        keymaps = {
-          init_selection = '<C-space>',
-          node_incremental = '<C-space>',
-          scope_incremental = false,
-          node_decremental = '<bs>',
-        },
-      },
-      matchup = {
-        enable = true,
       },
       fold = {
         enable = true,

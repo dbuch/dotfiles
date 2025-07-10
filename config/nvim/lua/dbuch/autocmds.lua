@@ -156,5 +156,6 @@ autocmd('User', {
 autocmd('VimEnter', {
   callback = function(_args)
     vim.cmd('clearjumps')
+    return true
   end,
 })

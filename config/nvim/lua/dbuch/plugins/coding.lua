@@ -315,7 +315,7 @@ return {
   },
   {
     'andymass/vim-matchup',
-    event = 'VeryLazy',
+    event = 'BufReadPre',
     ---@module 'match-up'
     ---@type matchup.Config
     ---@diagnostic disable: missing-fields

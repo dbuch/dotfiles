@@ -3,6 +3,7 @@
 return {
   {
     'luukvbaal/statuscol.nvim',
+    enabled = true,
     event = 'VeryLazy',
     dependencies = {
       'lewis6991/gitsigns.nvim',

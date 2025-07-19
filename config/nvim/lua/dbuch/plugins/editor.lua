@@ -216,12 +216,34 @@ return {
           vim.g.minifiles_active = false
         end,
       })
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'MiniFilesActionRename',
+        callback = function(event)
+          Snacks.rename.on_rename_file(event.data.from, event.data.to)
+        end,
+      })
     end,
   },
   {
     'folke/snacks.nvim',
     priority = 1000,
     lazy = false,
+    keys = {
+      {
+        '<leader>.',
+        function()
+          Snacks.scratch()
+        end,
+        desc = 'Toggle Scratch Buffer',
+      },
+      {
+        '<leader>S',
+        function()
+          Snacks.scratch.select()
+        end,
+        desc = 'Select Scratch Buffer',
+      },
+    },
     dependencies = {
       'echasnovski/mini.icons',
     },
@@ -258,8 +280,9 @@ return {
         },
       },
       image = { enabled = true },
+      scratch = { enabled = true },
       scroll = {
-        enabled = true,
+        enabled = false,
         animate = {
           duration = { step = 8, total = 80 },
           easing = 'linear',
@@ -272,7 +295,13 @@ return {
       },
       words = { enabled = false },
       scope = { enabled = false },
-      statuscolumn = { enabled = false },
+      statuscolumn = {
+        enabled = false,
+        git_hl = true,
+        folds = { open = false },
+        left = { 'fold', 'sign', 'git' },
+        right = { 'mark' },
+      },
     },
   },
   {
@@ -312,13 +341,21 @@ return {
   {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' },
-    ft = { 'vimwiki', 'markdown' },
+    ft = { 'markdown', 'norg', 'rmd', 'org', 'vimwiki' },
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     opts = {
-      file_types = { 'markdown', 'vimwiki' },
+      file_types = { 'markdown', 'norg', 'rmd', 'org', 'vimwiki' },
+      heading = {
+        sign = true,
+        icons = { '󰲡 ', '󰲣 ', '󰲥 ', '󰲧 ', '󰲩 ', '󰲫 ' },
+      },
+      checkbox = { enabled = true },
       completions = {
         blink = {
+          enabled = true,
+        },
+        lsp = {
           enabled = true,
         },
       },

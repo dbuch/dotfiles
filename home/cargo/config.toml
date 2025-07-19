@@ -7,5 +7,7 @@ rustflags = [
   "-C",
   "link-arg=-fuse-ld=/usr/bin/mold",
   "-C",
+  "link-arg=-Wl,--no-rosegment",
+  "-C",
   "split-debuginfo=unpacked",
 ]

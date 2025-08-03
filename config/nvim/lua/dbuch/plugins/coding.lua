@@ -4,6 +4,11 @@
 ---@type LazyPluginSpec[]
 return {
   {
+    'echasnovski/mini.ai',
+    event = 'BufReadPre',
+    config = true,
+  },
+  {
     'echasnovski/mini.pairs',
     version = false,
     event = 'InsertEnter',
@@ -349,7 +354,7 @@ return {
         winblend = 5,
       },
     },
-    keys = { -- load the plugin only when using it's keybinding:
+    keys = {
       { '<leader>u', "<cmd>lua require('undotree').toggle()<cr>" },
     },
   },

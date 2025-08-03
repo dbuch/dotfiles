@@ -312,7 +312,7 @@ return {
   },
   {
     'folke/todo-comments.nvim',
-    event = 'VeryLazy',
+    event = 'BufReadPre',
     opts = {},
   },
   {

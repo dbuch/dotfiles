@@ -101,7 +101,7 @@
     event: { send: menu name: commands_menu }
   }
   {
-    name: nvim_tv_find
+    name: nvim_tv_fd
     modifier: Alt
     keycode: char_e
     mode: [vi_normal vi_insert]
@@ -117,7 +117,7 @@
     mode: [vi_normal vi_insert]
     event: {
       send: ExecuteHostCommand
-      cmd: "let args = (tv text | split row ':'); if ($args | length) == 2 { nvim $args.0 +:($args.1) }"
+      cmd: "let args = (tv grep | split row ':'); if ($args | length) == 2 { nvim $args.0 +:($args.1) }"
     }
   }
   {

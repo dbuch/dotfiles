@@ -2,7 +2,7 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    'echasnovski/mini.pick',
+    'nvim-mini/mini.pick',
     lazy = false,
     version = false,
     opts = {
@@ -160,7 +160,7 @@ return {
     },
   },
   {
-    'echasnovski/mini.colors',
+    'nvim-mini/mini.colors',
     init = function()
       vim.api.nvim_create_user_command('LoadMiniColors', function()
         vim.cmd('Lazy load mini.colors')
@@ -173,7 +173,7 @@ return {
     end,
   },
   {
-    'echasnovski/mini.files',
+    'nvim-mini/mini.files',
     lazy = false,
     version = false,
     opts = {
@@ -245,7 +245,7 @@ return {
       },
     },
     dependencies = {
-      'echasnovski/mini.icons',
+      'nvim-mini/mini.icons',
     },
     init = function()
       vim.api.nvim_create_autocmd('User', {
@@ -305,7 +305,7 @@ return {
     },
   },
   {
-    'echasnovski/mini.cursorword',
+    'nvim-mini/mini.cursorword',
     event = 'BufReadPost',
     version = false,
     opts = {},
@@ -340,7 +340,7 @@ return {
   },
   {
     'MeanderingProgrammer/render-markdown.nvim',
-    dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' },
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.icons' },
     ft = { 'markdown', 'norg', 'rmd', 'org', 'vimwiki' },
     ---@module 'render-markdown'
     ---@type render.md.UserConfig

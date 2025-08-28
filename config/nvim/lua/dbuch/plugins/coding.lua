@@ -4,12 +4,12 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    'echasnovski/mini.ai',
+    'nvim-mini/mini.ai',
     event = 'BufReadPre',
     config = true,
   },
   {
-    'echasnovski/mini.pairs',
+    'nvim-mini/mini.pairs',
     version = false,
     event = 'InsertEnter',
     opts = {
@@ -21,7 +21,7 @@ return {
     },
   },
   {
-    'echasnovski/mini.comment',
+    'nvim-mini/mini.comment',
     version = false,
     --event = 'VeryLazy',
     keys = {
@@ -49,7 +49,7 @@ return {
     },
   },
   {
-    'echasnovski/mini.align',
+    'nvim-mini/mini.align',
     opts = {},
     keys = {
       { 'ga', mode = { 'n', 'v' } },
@@ -57,7 +57,7 @@ return {
     },
   },
   {
-    'echasnovski/mini.surround',
+    'nvim-mini/mini.surround',
     version = false,
     keys = function(_, keys)
       local plugin = require('lazy.core.config').spec.plugins['mini.surround']
@@ -124,7 +124,7 @@ return {
     version = 'v1.*',
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
-      'echasnovski/mini.icons',
+      'nvim-mini/mini.icons',
       {
         'supermaven-inc/supermaven-nvim',
         dev = true,

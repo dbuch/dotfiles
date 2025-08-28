@@ -96,6 +96,7 @@ return {
   -- Autocomplete
   {
     'saecki/crates.nvim',
+    tag = 'stable',
     event = 'BufRead Cargo.toml',
     ---@module "crates.config"
     ---@type crates.UserConfig

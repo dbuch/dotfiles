@@ -119,20 +119,12 @@ return {
       },
     },
     dependencies = {
-      'rcarriga/nvim-dap-ui',
-      'nvim-neotest/nvim-nio',
       {
         'theHamsta/nvim-dap-virtual-text',
         opts = {},
       },
     },
-    config = function()
-      local dap = require('dap')
-      local ui = require('dapui')
-      local dap_vt = require('nvim-dap-virtual-text')
-
-      dap_vt.setup()
-
+    config = function(plugin, opts)
       vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
 
       vim.fn.sign_define(
@@ -156,21 +148,27 @@ return {
         { text = '', texthl = 'DiagnosticInfo', linehl = '', numhl = '' }
       )
 
-      dap.listeners.after.event_initialized['dapui_config'] = function()
-        ui.open()
-      end
-
-      dap.listeners.before.event_terminated['dapui_config'] = function()
-        ui.close()
-      end
-
-      dap.listeners.before.event_exited['dapui_config'] = function()
-        ui.close()
-      end
-
-      ui.setup({
-        library = { plugins = { 'nvim-dap-ui' }, types = true },
-      })
+      require('dbuch.dap_config').setup(require('dap'))
     end,
+  },
+  {
+    'igorlfs/nvim-dap-view',
+    cmd = {
+      -- Opens both nvim-dap-view windows1: views + console.
+      'DapViewOpen',
+      -- Closes the views window. Accepts a bang (i.e., DapViewClose!) to also hide the terminal window.
+      'DapViewClose',
+      -- Behaves like DapViewOpen if there's no views window. Else behaves like DapViewClose (also accepts a bang to behave like DapViewClose!).
+      'DapViewToggle',
+      -- In normal mode, adds the expression under the cursor to the watch list (see caveats ). In visual mode, adds the selection to the watch list. Also accepts adding an expression directly (i.e., :DapViewWatch foo + bar), which takes precedence.
+      'DapViewWatch',
+      -- Shows a given view and jumps to its window. For instance, to jump to the REPL, you can use :DapViewJump repl.
+      'DapViewJump',
+      -- Shows a given view. If the specified view is already the current one, jumps to its window.
+      'DapViewShow',
+    },
+    ---@module 'dap-view'
+    ---@type dapview.Config
+    opts = {},
   },
 }

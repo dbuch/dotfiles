@@ -1,65 +1,103 @@
+# ------------------------
+# Identity
+# ------------------------
 [user]
-	email = boogiewasthere@gmail.com
-	name = Daniel Buch Hansen
+  email = boogiewasthere@gmail.com
+  name = Daniel Buch Hansen
 
-[push]
-	default = simple
-  autoSetupRemote = true
-  followTags = true
-
+# ------------------------
+# Core Behavior
+# ------------------------
 [core]
   editor = nvim
   pager = delta
-
-[delta]
-  side-by-side = true
-  navigate = true
-  light = false
+  excludesfile = ~/.gitignore        # Global gitignore file
 
 [init]
   defaultBranch = main
 
+# ------------------------
+# Help & Safety
+# ------------------------
+[help]
+  autocorrect = prompt               # Ask before running autocorrected commands
+
+# ------------------------
+# Commit / Rebase / Merge
+# ------------------------
+[commit]
+  verbose = true                     # Show diff when committing
+
+[rebase]
+  autoSquash = true                  # Automatically squash commits with "fixup!/squash!"
+  autoStash = true                   # Stash changes automatically before rebase
+  updateRefs = true                  # Update branch refs when rebasing
+
+[rerere]
+  enabled = true                     # Reuse recorded resolutions (rerere)
+  autoupdate = true                  # Auto-apply previously recorded resolutions
+
 [merge]
   tool = nvim
-  conflictstyle = zdiff3
+  conflictstyle = zdiff3             # Show base, local, remote in conflicts
 
 [mergetool]
-  prompt = true
+  prompt = true                      # Prompt before launching merge tool
+
+# ------------------------
+# User Interface / Output
+# ------------------------
+[delta]
+  side-by-side = true                # Show diffs side-by-side
+  navigate = true                    # Allow keyboard navigation in delta
+  light = false                      # Use dark theme
 
 [column]
-  ui = auto
-
-[branch]
-  sort = -committerdate
-
-[tag]
-  sort = version:refname
-
-[diff]
-  algorithm = histogram
-  colorMoved = plain
-  mnemonicPrefix = true
-  renames = true
-
-[fetch]
-  prune = true
-  pruneTags = true
-  all = true
-
-[pull]
-  rebase = true
+  ui = auto                          # Automatically enable column output
 
 [log]
-  date = short
+  date = short                       # Use compact date format in logs
 
 [interactive]
-  diffFilter = delta --color-only
+  diffFilter = delta --color-only    # Use delta for interactive diffs
 
+# ------------------------
+# Branches / Tags
+# ------------------------
+[branch]
+  sort = -committerdate              # Sort branches by most recent commit
+
+[tag]
+  sort = version:refname             # Sort tags by version numbers
+
+# ------------------------
+# Diff Behavior
+# ------------------------
+[diff]
+  algorithm = histogram              # Better diff algorithm for code
+  colorMoved = plain                 # Highlight moved code plainly
+  mnemonicPrefix = true              # Use mnemonic prefixes in diff (e.g. i/m/a/c)
+  renames = true                     # Detect renames in diffs
+
+# ------------------------
+# Push / Fetch / Pull
+# ------------------------
+[push]
+  default = simple                   # Push current branch to same name upstream
+  autoSetupRemote = true             # Automatically set remote on first push
+  followTags = true                  # Push annotated tags along with commits
+
+[fetch]
+  prune = true                       # Remove remote-tracking branches that were deleted
+  pruneTags = true                   # Remove deleted remote tags
+  all = true                         # Fetch all remotes by default
+
+[pull]
+  rebase = true                      # Use rebase instead of merge when pulling
+
+# ------------------------
+# Aliases
+# ------------------------
 [alias]
   mr-checkout = !sh -c 'git fetch $1 merge-requests/$2/head:mr-$1-$2 && git checkout mr-$1-$2' -
   pr-checkout = !sh -c 'git fetch origin pull/$1/head:pr-$1 && git checkout pr-$1' -
-
-[rebase]
-	autoSquash = true
-	autoStash = true
-	updateRefs = true

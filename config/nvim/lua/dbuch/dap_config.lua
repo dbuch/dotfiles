@@ -1,8 +1,12 @@
 -- lua/dap-config/init.lua
 local M = {}
 
-function M.setup(dap_module)
-  local dap = dap_module or require('dap')
+function M.setup()
+  local ok, dap = pcall(require, 'dap')
+  if not ok then
+    vim.notify('dap.nvim not found', vim.log.levels.ERROR)
+  end
+
   dap.adapters.lldb = {
     type = 'executable',
     command = 'lldb-vscode',

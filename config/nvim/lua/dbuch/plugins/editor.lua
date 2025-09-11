@@ -179,15 +179,7 @@ return {
     opts = {
       content = {
         filter = function(fs_entry)
-          ---@type string
-          local basename = fs_entry.name
-          if basename:sub(0, 1) == '.' then
-            if basename:match('%.config') or basename:match('%.git') then
-              return true
-            end
-            return false
-          end
-          return true
+          return not vim.startswith(fs_entry.name, '.')
         end,
       },
       windows = {
@@ -197,31 +189,61 @@ return {
     },
     config = function(_, opts)
       local minifiles = require('mini.files')
+
       minifiles.setup(opts)
 
+      local miniext = require('dbuch.minifiles_ext').new()
+      miniext:subscribe_events()
+
       -- Keep track of when the explorer is open to disable format on save.
-      local minifiles_explorer_group =
-        vim.api.nvim_create_augroup('dbuch/minifiles_explorer', { clear = true })
-      vim.api.nvim_create_autocmd('User', {
-        group = minifiles_explorer_group,
-        pattern = 'MiniFilesExplorerOpen',
-        callback = function()
-          vim.g.minifiles_active = true
-        end,
-      })
-      vim.api.nvim_create_autocmd('User', {
-        group = minifiles_explorer_group,
-        pattern = 'MiniFilesExplorerClose',
-        callback = function()
-          vim.g.minifiles_active = false
-        end,
-      })
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'MiniFilesActionRename',
-        callback = function(event)
-          Snacks.rename.on_rename_file(event.data.from, event.data.to)
-        end,
-      })
+      -- local minifiles_explorer_group =
+      --   vim.api.nvim_create_augroup('dbuch/minifiles_explorer', { clear = true })
+      --
+      -- local show_dotfiles = false
+      --
+      -- local filter_show = function(fs_entry)
+      --   return true
+      -- end
+      --
+      -- local filter_hide = function(fs_entry)
+      --   return not vim.startswith(fs_entry.name, '.')
+      -- end
+      --
+      -- local toggle_dotfiles = function()
+      --   show_dotfiles = not show_dotfiles
+      --   local new_filter = show_dotfiles and filter_show or filter_hide
+      --   MiniFiles.refresh({ content = { filter = new_filter } })
+      -- end
+      --
+      -- vim.api.nvim_create_autocmd('User', {
+      --   pattern = 'MiniFilesBufferCreate',
+      --   callback = function(args)
+      --     local buf_id = args.data.buf_id
+      --     -- Tweak left-hand side of mapping to your liking
+      --     vim.keymap.set('n', '<C-h>', toggle_dotfiles, { buffer = buf_id })
+      --   end,
+      -- })
+      --
+      -- vim.api.nvim_create_autocmd('User', {
+      --   group = minifiles_explorer_group,
+      --   pattern = 'MiniFilesExplorerOpen',
+      --   callback = function()
+      --     vim.g.minifiles_active = true
+      --   end,
+      -- })
+      -- vim.api.nvim_create_autocmd('User', {
+      --   group = minifiles_explorer_group,
+      --   pattern = 'MiniFilesExplorerClose',
+      --   callback = function()
+      --     vim.g.minifiles_active = false
+      --   end,
+      -- })
+      -- vim.api.nvim_create_autocmd('User', {
+      --   pattern = 'MiniFilesActionRename',
+      --   callback = function(event)
+      --     Snacks.rename.on_rename_file(event.data.from, event.data.to)
+      --   end,
+      -- })
     end,
   },
   {
@@ -248,6 +270,10 @@ return {
       'nvim-mini/mini.icons',
     },
     init = function()
+      vim.api.nvim_create_user_command('Git', function()
+        Snacks.lazygit.open()
+      end, {})
+
       vim.api.nvim_create_autocmd('User', {
         pattern = 'VeryLazy',
         callback = function()
@@ -295,6 +321,14 @@ return {
       },
       words = { enabled = false },
       scope = { enabled = false },
+      lazygit = {
+        enabled = false,
+        configure = true,
+        config = {
+          os = { editPreset = 'nvim-remote' },
+          gui = { nerdFontsVersion = '3' },
+        },
+      },
       statuscolumn = {
         enabled = false,
         git_hl = true,

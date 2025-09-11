@@ -55,7 +55,9 @@ local enabled_lsps = {
   'ruff',
   'zls',
 
-  'omnisharp',
+  -- 'omnisharp', --TODO: https://www.youtube.com/watch?v=yJc4AWf0TNs & https://git.ramboe.io/configuration/dotfiles-nvim/src/branch/main/lua/plugins/init.lua#L7
+
+  'roslyn',
   'wgsl',
 
   -- Web Programming

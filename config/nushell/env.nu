@@ -30,7 +30,6 @@ export-env { load-env {
 export-env { load-env {
   BROWSER: "firefox"
   DEBUGINFOD_URLS: "https://debuginfod.archlinux.org/"
-  CARGO_TARGET_DIR: ($env.XDG_CACHE_HOME | path join "cargo-build-targets")
   MOZ_ENABLE_WAYLAND: 1
   EDITOR: "nvim"
   VISUAL: "nvim"
@@ -67,6 +66,10 @@ if ($path_list | any {|$p| ($p == ($env.HOME | path join ".cargo" "bin"))}) == f
 
 if ($path_list | any {|$p| ($p == ($env.HOME | path join ".local" "bin"))}) == false {
   $env.PATH = ($env.PATH | split row (char esep) | prepend '~/.local/bin/')
+}
+
+if ($path_list | any {|$p| ($p == ($env.HOME | path join ".dotnet" "tools"))}) == false {
+  $env.PATH = ($env.PATH | split row (char esep) | prepend '~/.dotnet/tools/')
 }
 
 $env.NU_LIB_DIRS = [

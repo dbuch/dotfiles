@@ -1,10 +1,10 @@
 #!/usr/bin/nu
 
 const links: record = {
-  "config/nushell"         : ".config/nushell",
   "config/ghostty"         : ".config/ghostty",
   "config/nvim"            : ".config/nvim",
   "config/git"             : ".config/git",
+  "config/lazygit"         : ".config/lazygit",
   "home/ripgreprc"         : ".ripgreprc",
   "home/cargo/config.toml" : ".cargo/config.toml",
 }
@@ -73,7 +73,7 @@ def link_all [links: record] {
     if (validate $source_path $link_path) {
       print $"✅ ($e.dest) -> ($e.source)"
     } else {
-      # link $source_path $link_path
+      link $source_path $link_path
     }
   }
 }

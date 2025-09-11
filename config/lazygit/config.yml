@@ -1,0 +1,44 @@
+notARepository: quit
+disableStartupPopups: true
+promptToReturnFromSubprocess: false
+quitOnTopLevelReturn: true
+
+gui:
+  theme:
+    activeBorderColor:
+      - green
+      - bold
+    inactiveBorderColor:
+      - white
+  showCommandLog: false
+  nerdFontsVersion: 3
+
+os:
+  editCommand: "nvim"
+  editCommandTemplate: "{{editor}} {{filename}}"
+
+keybinding:
+  universal:
+    quit: "q"
+    quit-alt1: "<esc>"
+  files:
+    up: "k"
+    down: "j"
+    toggleStaged: "space"
+    commitChanges: "c"
+  branches:
+    checkoutBranch: "enter"
+    deleteBranch: "d"
+    up: "k"
+    down: "j"
+  commits:
+    up: "k"
+    down: "j"
+  stash:
+    up: "k"
+    down: "j"
+  global:
+    prevTab: "h"
+    nextTab: "l"
+    gotoTop: "g"
+    gotoBottom: "G"

@@ -268,7 +268,9 @@ return {
       },
 
       fuzzy = {
-        use_frecency = true,
+        frecency = {
+          enabled = true,
+        },
         use_proximity = true,
         sorts = { 'score', 'sort_text' },
         prebuilt_binaries = {
@@ -348,7 +350,6 @@ return {
   },
   {
     'jiaoshijie/undotree',
-    dependencies = 'nvim-lua/plenary.nvim',
     opts = {
       float_diff = true,
       window = {

@@ -386,8 +386,8 @@ return {
       },
       checkbox = { enabled = true },
       completions = {
-        blink = {
-          enabled = true,
+        coq = {
+          enabled = false,
         },
         lsp = {
           enabled = true,

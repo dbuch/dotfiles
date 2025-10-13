@@ -77,12 +77,13 @@ $env.NU_LIB_DIRS = [
     ($nu.default-config-dir)
     ($nu.default-config-dir | path join "scripts")
     ($nu.default-config-dir | path join "modules")
-
+    ($nu.default-config-dir | path join "overlays")
 ]
 
 $env.NU_PLUGIN_DIRS = [
     ($env.NUPM_HOME | path join "modules")
-]
+    ($nu.data-dir | path join 'plugins' | path join (version).version)
+    ($nu.config-path | path dirname | path join 'plugins')]
 
 $env.SHELL = $nu.current-exe
 

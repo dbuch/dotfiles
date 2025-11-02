@@ -194,56 +194,6 @@ return {
 
       local miniext = require('dbuch.minifiles_ext').new()
       miniext:subscribe_events()
-
-      -- Keep track of when the explorer is open to disable format on save.
-      -- local minifiles_explorer_group =
-      --   vim.api.nvim_create_augroup('dbuch/minifiles_explorer', { clear = true })
-      --
-      -- local show_dotfiles = false
-      --
-      -- local filter_show = function(fs_entry)
-      --   return true
-      -- end
-      --
-      -- local filter_hide = function(fs_entry)
-      --   return not vim.startswith(fs_entry.name, '.')
-      -- end
-      --
-      -- local toggle_dotfiles = function()
-      --   show_dotfiles = not show_dotfiles
-      --   local new_filter = show_dotfiles and filter_show or filter_hide
-      --   MiniFiles.refresh({ content = { filter = new_filter } })
-      -- end
-      --
-      -- vim.api.nvim_create_autocmd('User', {
-      --   pattern = 'MiniFilesBufferCreate',
-      --   callback = function(args)
-      --     local buf_id = args.data.buf_id
-      --     -- Tweak left-hand side of mapping to your liking
-      --     vim.keymap.set('n', '<C-h>', toggle_dotfiles, { buffer = buf_id })
-      --   end,
-      -- })
-      --
-      -- vim.api.nvim_create_autocmd('User', {
-      --   group = minifiles_explorer_group,
-      --   pattern = 'MiniFilesExplorerOpen',
-      --   callback = function()
-      --     vim.g.minifiles_active = true
-      --   end,
-      -- })
-      -- vim.api.nvim_create_autocmd('User', {
-      --   group = minifiles_explorer_group,
-      --   pattern = 'MiniFilesExplorerClose',
-      --   callback = function()
-      --     vim.g.minifiles_active = false
-      --   end,
-      -- })
-      -- vim.api.nvim_create_autocmd('User', {
-      --   pattern = 'MiniFilesActionRename',
-      --   callback = function(event)
-      --     Snacks.rename.on_rename_file(event.data.from, event.data.to)
-      --   end,
-      -- })
     end,
   },
   {
@@ -284,7 +234,14 @@ return {
           _G.bt = function()
             Snacks.debug.backtrace()
           end
-          vim.print = _G.dd -- Override print to use snacks for `:=` command
+
+          if vim.fn.has('nvim-0.11') == 1 then
+            vim._print = function(_, ...)
+              dd(...)
+            end
+          else
+            vim.print = _G.dd
+          end
 
           Snacks.toggle.inlay_hints():map('<leader>i')
         end,
@@ -423,27 +380,19 @@ return {
   {
     'ThePrimeagen/harpoon',
     branch = 'harpoon2',
+    ---@module 'harpoon'
+    ---@type HarpoonPartialSettings
     opts = {
-      menu = {
-        width = vim.api.nvim_win_get_width(0) - 4,
-      },
       settings = {
         save_on_toggle = true,
       },
     },
     keys = function()
+      local harpoon = require('harpoon')
       local keys = {
-        {
-          '<leader>H',
-          function()
-            require('harpoon'):list():add()
-          end,
-          desc = 'Harpoon File',
-        },
         {
           '<leader>h',
           function()
-            local harpoon = require('harpoon')
             harpoon.ui:toggle_quick_menu(harpoon:list())
           end,
           desc = 'Harpoon Quick Menu',
@@ -454,7 +403,24 @@ return {
         table.insert(keys, {
           '<leader>' .. i,
           function()
-            require('harpoon'):list():select(i)
+            local list = harpoon:list()
+            local length = list:length()
+            ---@type HarpoonItem?
+            local slot = list:get(i)
+
+            if slot and slot.value then
+              list:select(i)
+            else
+              if i > length then
+                ---@type HarpoonItem
+                local item = list.config.create_list_item(list.config)
+                local in_list = list:get_by_value(item.value)
+                if not in_list then
+                  list:add(item)
+                  vim.notify("Harpoon'ed: " .. item.value)
+                end
+              end
+            end
           end,
           desc = 'Harpoon to File ' .. i,
         })

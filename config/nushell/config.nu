@@ -30,7 +30,6 @@ $env.config = ($env.config? | default {} | merge {
   display_errors: {
     exit_code: false
     termination_signal: false,
-
   }
   filesize: {
     unit: metric
@@ -52,9 +51,6 @@ $env.config = ($env.config? | default {} | merge {
   hooks: (source hooks.nu)
   color_config: (source theme.nu)
 })
-
-$env.CARAPACE_LENIENT = 1
-$env.CARAPACE_BRIDGES = "fish,zsh,bash"
 
 $env.config.completions.external = {
   enable: true
@@ -83,6 +79,9 @@ $env.PROMPT_INDICATOR = {|| " ❯ " }
 $env.PROMPT_INDICATOR_VI_INSERT = {|| " ❯ " }
 $env.PROMPT_INDICATOR_VI_NORMAL = {|| " ❮ " }
 $env.PROMPT_MULTILINE_INDICATOR = {|| "::: " }
+
+$env.CARAPACE_LENIENT = 1
+$env.CARAPACE_BRIDGES = "fish,zsh,bash"
 
 source "aliases.nu"
 

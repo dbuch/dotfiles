@@ -134,9 +134,6 @@ function M:subscribe_events()
       vim.keymap.set('n', '<C-h>', function()
         self:toggle_dotfiles()
       end, { buffer = buf_id })
-      -- vim.keymap.set('n', '<C-g>', function()
-      --   self:toggle_gitignored()
-      -- end, { buffer = buf_id })
 
       self:update_gitignored_cache(root)
     end,

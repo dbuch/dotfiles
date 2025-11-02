@@ -4,7 +4,7 @@ return {
   {
     'nvim-mini/mini.pick',
     lazy = false,
-    version = false,
+    version = '*',
     opts = {
       mappings = {
         move_up = '<A-k>',
@@ -167,7 +167,7 @@ return {
       end, {})
     end,
     cmd = 'LoadMiniColors',
-    version = false,
+    version = '*',
     config = function()
       require('mini.colors').setup()
     end,
@@ -175,7 +175,7 @@ return {
   {
     'nvim-mini/mini.files',
     lazy = false,
-    version = false,
+    version = '*',
     opts = {
       content = {
         filter = function(fs_entry)
@@ -200,6 +200,7 @@ return {
     'folke/snacks.nvim',
     priority = 1000,
     lazy = false,
+    version = '*',
     keys = {
       {
         '<leader>.',
@@ -298,7 +299,7 @@ return {
   {
     'nvim-mini/mini.cursorword',
     event = 'BufReadPost',
-    version = false,
+    version = '*',
     opts = {},
   },
   {

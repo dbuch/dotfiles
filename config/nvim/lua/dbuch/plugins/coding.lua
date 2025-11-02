@@ -5,12 +5,13 @@
 return {
   {
     'nvim-mini/mini.ai',
+    version = '*',
     event = 'BufReadPre',
     config = true,
   },
   {
     'nvim-mini/mini.pairs',
-    version = false,
+    version = '*',
     event = 'InsertEnter',
     opts = {
       modes = { insert = true, command = true, terminal = false },
@@ -22,7 +23,7 @@ return {
   },
   {
     'nvim-mini/mini.comment',
-    version = false,
+    version = '*',
     --event = 'VeryLazy',
     keys = {
       {
@@ -50,6 +51,7 @@ return {
   },
   {
     'nvim-mini/mini.align',
+    version = '*',
     opts = {},
     keys = {
       { 'ga', mode = { 'n', 'v' } },
@@ -58,7 +60,7 @@ return {
   },
   {
     'nvim-mini/mini.surround',
-    version = false,
+    version = '*',
     keys = function(_, keys)
       local plugin = require('lazy.core.config').spec.plugins['mini.surround']
       local opts = require('lazy.core.plugin').values(plugin, 'opts', false)

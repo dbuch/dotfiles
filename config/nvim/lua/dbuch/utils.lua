@@ -79,4 +79,10 @@ function string.ellipsize_at(s, maxwidth, ellipsis_char)
   return s
 end
 
+---@param self string
+---@return boolean: if the string is empty or nil
+function string.is_empty(self)
+  return self == nil or self == ''
+end
+
 return M

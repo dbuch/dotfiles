@@ -409,17 +409,18 @@ return {
             ---@type HarpoonItem?
             local slot = list:get(i)
 
-            if slot and slot.value then
-              list:select(i)
-            else
-              if i > length then
-                ---@type HarpoonItem
-                local item = list.config.create_list_item(list.config)
-                local in_list = list:get_by_value(item.value)
-                if not in_list then
-                  list:add(item)
-                  vim.notify("Harpoon'ed: " .. item.value)
-                end
+            if slot and not string.is_empty(slot.value) then
+              return list:select(i)
+            end
+
+            if i >= length then
+              ---@type HarpoonItem
+              local item = list.config.create_list_item(list.config)
+              local val = item and item.value
+
+              if not string.is_empty(val) and not list:get_by_value(val) then
+                list:add(item)
+                vim.notify("Harpoon'ed: " .. item.value)
               end
             end
           end,

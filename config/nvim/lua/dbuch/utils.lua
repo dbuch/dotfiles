@@ -65,23 +65,23 @@ function M.smart_quit()
   -- local window = vim.api.nvim_get_current_win()
   -- vim.api.nvim_win_close(window, false)
 end
----
+
 --- Truncates a string to a specified maximum width and appends an ellipsis character if needed.
---- @param s string: The input string to truncate.
+--- @param self string: The input string to truncate.
 --- @param maxwidth integer: The maximum character width of the string (including the ellipsis if added).
 --- @param ellipsis_char string? The ellipsis character to append (defaults to "…").
 --- @return string: The truncated string with ellipsis if truncation occurred, or the original string if not.
-function string.ellipsize_at(s, maxwidth, ellipsis_char)
-  if vim.fn.strchars(s) > maxwidth then
+function string:ellipsize_at(maxwidth, ellipsis_char)
+  if vim.fn.strchars(self) > maxwidth then
     ellipsis_char = ellipsis_char or '…'
-    return vim.fn.strcharpart(s, 0, maxwidth) .. ellipsis_char
+    return vim.fn.strcharpart(self, 0, maxwidth) .. ellipsis_char
   end
-  return s
+  return self
 end
 
----@param self string
+---@param self string The input string to check.
 ---@return boolean: if the string is empty or nil
-function string.is_empty(self)
+function string:is_empty()
   return self == nil or self == ''
 end
 

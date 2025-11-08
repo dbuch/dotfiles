@@ -2,8 +2,8 @@
 ---@type LazyPluginSpec[]
 return {
   {
-    'vxpm/ferris.nvim',
-    ft = 'rust',
+    'folke/todo-comments.nvim',
+    event = 'BufReadPre',
     opts = {},
   },
 }

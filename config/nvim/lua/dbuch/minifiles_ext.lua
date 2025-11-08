@@ -8,11 +8,11 @@
 ---@field show_dotfiles boolean
 ---@field show_gitignored boolean
 ---@field gitignored_cache table<string, boolean>
+---@field subscribe_events function
 
 local M = {}
 M.__index = M
 
--- Constructor
 ---@return MiniFilesExt
 function M.new()
   local self = setmetatable({}, M)
@@ -122,6 +122,8 @@ function M:update_gitignored_cache(root)
   )
 end
 
+---Subscribes to events for this module.
+---@return nil
 function M:subscribe_events()
   local explorer_group = vim.api.nvim_create_augroup('dbuch/minifiles_explorer', { clear = true })
   -- Handle buffer creation: bind keys and initialize gitignore cache
@@ -174,4 +176,5 @@ function M:subscribe_events()
   })
 end
 
+---@return MiniFilesExt
 return M

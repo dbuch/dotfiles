@@ -45,6 +45,7 @@ local enabled_lsps = {
   'cssls', -- Css
   'taplo', -- Toml
   'lemminx', -- XML
+  'yamlls', -- Yaml
 
   -- Programming
   'rust_analyzer',

@@ -10,6 +10,9 @@ history.sqlite3*
 debug/
 target/
 
+## Security
+*.pem
+
 ## Logs
 npm-debug.log*
 yarn-debug.log*

@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/LucasPickering/slumber/refs/tags/v4.2.0/schemas/config.json
+# This config has been prepopulated with default values. For documentation, see:
+# https://slumber.lucaspickering.me/api/configuration/index.html
+editor: nvim
+ignore_certificate_hosts: []
+large_body_size: 1000000
+follow_redirects: true
+commands:
+  shell:
+  - /bin/sh
+  - -c
+  default_query: {}
+pager: {}
+preview_templates: true
+input_bindings:
+  up: [up, k]
+  down: [down, j]
+  left: [left, h]
+  right: [right, l]
+  scroll_left: [shift left, shift h]
+  scroll_right: [shift right, shift l]
+  select_recipe_list: [w]
+  history: [shift h]
+  page_up: [ctrl u]
+  page_down: [ctrl d]
+  previous_pane: [alt j, shift tab]
+  next_pane: [alt k, tab]
+  open_actions: [a, x]
+  quit:
+  - q
+  force_quit:
+  - ctrl c
+  open_help:
+  - '?'
+  fullscreen:
+  - f
+  reload_collection:
+  - f5
+  search:
+  - /
+  export:
+  - ':'
+  home:
+  - home
+  end:
+  - end
+  submit:
+  - enter
+  toggle:
+  - space
+  cancel:
+  - escape
+  delete:
+  - d
+  edit:
+  - e
+  reset:
+  - z
+  view:
+  - v
+  select_collection:
+  - f3
+  select_profile_list:
+  - p
+  select_recipe:
+  - c
+  select_response:
+  - r
+theme:
+  primary_color: blue
+  primary_text_color: white
+  secondary_color: yellow
+  success_color: green
+  error_color: red
+persist: true

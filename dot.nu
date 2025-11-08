@@ -5,6 +5,8 @@ const links: record = {
   "config/nvim"            : ".config/nvim",
   "config/git"             : ".config/git",
   "config/lazygit"         : ".config/lazygit",
+  "config/slumber"         : ".config/slumber",
+  "config/television"      : ".config/television",
   "home/ripgreprc"         : ".ripgreprc",
   "home/cargo/config.toml" : ".cargo/config.toml",
 }

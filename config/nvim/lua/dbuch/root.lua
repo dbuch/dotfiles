@@ -46,7 +46,7 @@ local function resolve_client_root(client)
   ---@type string|nil
   local root = nil
   if client.config.workspace_folders ~= nil and #client.config.workspace_folders > 0 then
-    root = client.config.workspace_folders[1].uri
+    root = vim.uri_from_fname(client.config.workspace_folders[1].uri)
   else
     root = client.config.root_dir
   end

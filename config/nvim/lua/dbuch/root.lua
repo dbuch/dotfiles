@@ -71,6 +71,7 @@ function M.resolve_root(buf_num)
     return root
   end
 
+  ---@type string|nil
   local file_identifier = vim.fs.find(M.root_identifiers, { path = dir_path, upward = true })[1]
   if file_identifier ~= nil then
     root = vim.fs.dirname(file_identifier)
@@ -83,8 +84,6 @@ function M.resolve_root(buf_num)
   if vim.fn.isdirectory(root) == 0 then
     return
   end
-
-  root = normalize_root(root)
 
   M.root_cache[dir_path] = root
   return root
@@ -110,6 +109,11 @@ function M.setup()
   vim.api.nvim_create_autocmd('BufRead', {
     group = augroup,
     callback = function(args)
+      local buftype = vim.bo[args.buf].buftype
+      if buftype ~= '' then
+        return
+      end
+
       if args.file == nil or args.file == '' then
         return
       end

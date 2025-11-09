@@ -89,50 +89,6 @@ autocmd('TermOpen', {
   end,
 })
 
-local function emit(ev, data)
-  ---@type string|nil
-  vim.api.nvim_exec_autocmds('User', { pattern = ev, data = data })
-end
-
----@class RooterCallbackArgs
----@field event string
----@field root string
-autocmd('LspAttach', {
-  group = NvimTrait.augroup('rooter'),
-  callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id) ---@type table|nil
-    if client == nil then
-      return
-    end
-    local root = client.config.root_dir ---@type string
-    local current_cwd = vim.fn.getcwd()
-    if root ~= current_cwd then
-      if vim.fn.chdir(root) ~= '' then
-        ---@type RooterCallbackArgs
-        local data = {
-          event = 'LSP',
-          root = root,
-        }
-        emit('Rooted', data)
-      end
-    end
-  end,
-})
-
-autocmd('User', {
-  pattern = 'Rooted',
-  callback = function(args)
-    ---@type RooterCallbackArgs
-    local data = args.data
-    if data.root ~= nil then
-      -- local setby = event_to_string(data.event)
-      vim.notify(data.root:gsub(vim.env.HOME, '~'), vim.log.levels.INFO, {
-        annote = ('New Working Directory (%s)'):format(data.event),
-      })
-    end
-  end,
-})
-
 NvimTrait.on_ts_filetype(function(bufnr, lang)
   require('dbuch.treesitter').attach(bufnr)
 
@@ -156,6 +112,5 @@ autocmd('User', {
 autocmd('VimEnter', {
   callback = function(_args)
     vim.cmd('clearjumps')
-    return true
   end,
 })

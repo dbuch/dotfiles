@@ -1,11 +1,22 @@
----@class DBuchRooter
+--- Fork of LazyVim Rooter
+
+---@class lazyvim.util.root
 ---@overload fun(): string
 local M = setmetatable({}, {
-  __call = function(m)
-    return m.get()
+  __call = function(m, ...)
+    return m.get(...)
   end,
 })
 
+---@class LazyRoot
+---@field paths string[]
+---@field spec LazyRootSpec
+
+---@alias LazyRootFn fun(buf: number): (string|string[])
+
+---@alias LazyRootSpec string|string[]|LazyRootFn
+
+---@type LazyRootSpec[]
 M.spec = { 'lsp', { '.git', 'lua' }, 'cwd' }
 
 M.detectors = {}
@@ -23,7 +34,7 @@ function M.detectors.lsp(buf)
   local clients = vim.lsp.get_clients({ bufnr = buf })
   clients = vim.tbl_filter(function(client)
     return not vim.tbl_contains(vim.g.root_lsp_ignore or {}, client.name)
-  end, clients)
+  end, clients) --[[@as vim.lsp.Client[] ]]
   for _, client in pairs(clients) do
     local workspace = client.config.workspace_folders
     for _, ws in pairs(workspace or {}) do
@@ -34,7 +45,7 @@ function M.detectors.lsp(buf)
     end
   end
   return vim.tbl_filter(function(path)
-    path = Utils.normalize_path(path)
+    path = LazyVim.norm(path)
     return path and bufpath:find(path, 1, true) == 1
   end, roots)
 end
@@ -69,8 +80,8 @@ function M.realpath(path)
   if path == '' or path == nil then
     return nil
   end
-  path = vim.uv.fs_realpath(path) or path
-  return Utils.normalize_path(path)
+  path = vim.fn.has('win32') == 0 and vim.uv.fs_realpath(path) or path
+  return LazyVim.norm(path)
 end
 
 ---@param spec LazyRootSpec
@@ -117,6 +128,29 @@ function M.detect(opts)
   return ret
 end
 
+function M.info()
+  local spec = type(vim.g.root_spec) == 'table' and vim.g.root_spec or M.spec
+
+  local roots = M.detect({ all = true })
+  local lines = {} ---@type string[]
+  local first = true
+  for _, root in ipairs(roots) do
+    for _, path in ipairs(root.paths) do
+      lines[#lines + 1] = ('- [%s] `%s` **(%s)**'):format(
+        first and 'x' or ' ',
+        path,
+        type(root.spec) == 'table' and table.concat(root.spec, ', ') or root.spec
+      )
+      first = false
+    end
+  end
+  lines[#lines + 1] = '```lua'
+  lines[#lines + 1] = 'vim.g.root_spec = ' .. vim.inspect(spec)
+  lines[#lines + 1] = '```'
+  LazyVim.info(lines, { title = 'LazyVim Roots' })
+  return roots[1] and roots[1].paths[1] or vim.uv.cwd()
+end
+
 ---@type table<number, string>
 M.cache = {}
 
@@ -155,7 +189,7 @@ function M.get(opts)
   if opts and opts.normalize then
     return ret
   end
-  return Utils.is_windows and ret:gsub('/', '\\') or ret
+  return LazyVim.is_win() and ret:gsub('/', '\\') or ret
 end
 
 function M.git()
@@ -163,6 +197,11 @@ function M.git()
   local git_root = vim.fs.find('.git', { path = root, upward = true })[1]
   local ret = git_root and vim.fn.fnamemodify(git_root, ':h') or root
   return ret
+end
+
+---@param opts? {hl_last?: string}
+function M.pretty_path(opts)
+  return ''
 end
 
 return M

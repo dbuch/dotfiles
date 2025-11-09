@@ -1,7 +1,5 @@
 local M = {}
 
-M.root = require('dbuch.traits.root')
-
 ---@return boolean
 M.is_windows = jit.os:find('Windows')
 

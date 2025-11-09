@@ -70,3 +70,5 @@ safe_require('dbuch.status')
 safe_require('dbuch.macros')
 
 safe_require('lsp')
+
+safe_require('dbuch.root').setup()

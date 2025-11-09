@@ -1,6 +1,5 @@
 M = {}
 
----comment
 ---@param what string
 ---@return string|string[]|nil
 function M.stdpath_normalized(what)
@@ -22,7 +21,7 @@ function M.stdpath_normalized(what)
 end
 
 ---@type boolean
-M.is_unix = vim.uv.os_uname().sysname:match('Windows') == nil
+M.is_windows = vim.uv.os_uname().sysname:match('Windows')
 ---@type string|string[]|nil
 M.cache_dir = M.stdpath_normalized('cache')
 ---@type string|string[]|nil

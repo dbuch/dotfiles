@@ -1,58 +1,124 @@
 local M = {}
----
+
+---Normalize a path to an absolute directory.
+---Expands ~, $VAR, resolves relative paths.
+---@param path string?
+---@return string? Fully normalized absolute directory path
+local function normalize(path)
+  if not path or path == '' then
+    return nil
+  end
+
+  local normalized = vim.fs.normalize(path)
+  local stat = vim.uv.fs_stat(normalized)
+  if not stat then
+    return nil
+  end
+
+  local is_file = stat.type == 'file'
+  if not is_file then
+    normalized = vim.fs.dirname(normalized)
+  end
+
+  return normalized
+end
+
+local deferred = require('dbuch.deferred')
+
 ---@class RooterCallbackArgs
 ---@field event string
 ---@field root string|nil
 
-M.root_cache = {}
+---@class RootCache
+---@field private roots table<string,string>
+local RootCache = {}
+RootCache.__index = RootCache
 
+function RootCache:new()
+  return setmetatable({
+    roots = {},
+  }, RootCache)
+end
+
+---@param root string?
+---@return string? ---normalized and dirname
+function RootCache:add(root)
+  local normalized = normalize(root)
+  if not normalized or normalized == '' then
+    return
+  end
+
+  self.roots[normalized] = normalized
+
+  return normalized
+end
+
+-- Check descendant
+---@param path string
+---@param root string
+---@return boolean if path is descendant of root
+local function is_descendant(path, root)
+  return path:sub(1, #root) == root
+end
+
+-- Walk upward to nearest cached root (fast)
+function RootCache:get(path)
+  for cached_root, _ in pairs(self.roots) do
+    if is_descendant(path, cached_root) then
+      return cached_root
+    end
+  end
+
+  return nil
+end
+
+function RootCache:dump()
+  local empty = true
+  for root in pairs(self.roots) do
+    empty = false
+    vim.notify('RootCache: ' .. root, vim.log.levels.INFO)
+  end
+  if empty then
+    vim.notify('RootCache: (empty)', vim.log.levels.INFO)
+  end
+end
+
+M.root_cache = RootCache:new()
 M.root_identifiers = { '.git' }
+
+----------------------------------------------------------
+-- Helpers
+----------------------------------------------------------
 
 ---@param data RooterCallbackArgs
 local function emit_rooted(data)
   if data.root == nil then
     return
   end
-  ---@type string|nil
   vim.api.nvim_exec_autocmds('User', { pattern = 'Rooted', data = data })
 end
 
----@param root string|nil
----@return string|nil
-local function normalize_root(root)
-  if root == nil then
-    return
-  end
-  return vim.fs.normalize(vim.fn.fnamemodify(root, ':p'))
-end
-
----@param root string|nil
+---@param root string
 local function change_root(root)
-  if root == nil then
-    return false
-  end
-
   local cwd = vim.fn.getcwd()
-  if normalize_root(cwd) == root then
+
+  if cwd == root then
     return false
   end
 
   return vim.fn.chdir(root) ~= ''
 end
 
----@param client vim.lsp.Client
----@return string|nil
 local function resolve_client_root(client)
-  ---@type string|nil
-  local root = nil
-  if client.config.workspace_folders ~= nil and #client.config.workspace_folders > 0 then
-    root = vim.uri_from_fname(client.config.workspace_folders[1].uri)
-  else
-    root = client.config.root_dir
+  if client.config.workspace_folders and #client.config.workspace_folders > 0 then
+    return vim.uri_to_fname(client.config.workspace_folders[1].uri)
   end
-
-  return root
+  return client.config.root_dir
 end
+
+----------------------------------------------------------
+-- Root resolution
+----------------------------------------------------------
 
 ---@param buf_num? number
 ---@return string|nil
@@ -60,34 +126,33 @@ function M.resolve_root(buf_num)
   buf_num = buf_num or 0
 
   local path = vim.api.nvim_buf_get_name(buf_num)
-
   if path == '' then
-    return
+    return nil
   end
 
-  local dir_path = vim.fs.dirname(path)
-  local root = M.root_cache[dir_path]
-  if root ~= nil then
-    return root
+  local dir_path = normalize(path)
+
+  -- 1. Cache check
+  local cached = M.root_cache:get(dir_path)
+  if cached then
+    return cached
   end
 
-  ---@type string|nil
-  local file_identifier = vim.fs.find(M.root_identifiers, { path = dir_path, upward = true })[1]
-  if file_identifier ~= nil then
-    root = vim.fs.dirname(file_identifier)
+  -- 2. Upward search for markers
+  local matches = vim.fs.find(M.root_identifiers, {
+    path = dir_path,
+    upward = true,
+  })
+
+  if not matches or #matches == 0 then
+    return nil
   end
 
-  if type(root) ~= 'string' then
-    return
-  end
-
-  if vim.fn.isdirectory(root) == 0 then
-    return
-  end
-
-  M.root_cache[dir_path] = root
-  return root
+  return M.root_cache:add(matches[1])
 end
+
+---@private
+M._running = {}
 
 function M.setup()
   local augroup = vim.api.nvim_create_augroup('dbuch_rooter', { clear = true })
@@ -95,75 +160,63 @@ function M.setup()
   vim.api.nvim_create_autocmd('User', {
     pattern = 'Rooted',
     callback = function(args)
-      local data = args.data
-      if data and data.root then
+      if args.data and args.data.root then
         vim.notify(
-          data.root:gsub(vim.env.HOME, '~'),
+          args.data.root:gsub(vim.env.HOME, '~'),
           vim.log.levels.INFO,
-          { annote = ('Workspace Directory (%s)'):format(data.event) }
+          { annote = ('Workspace Directory (%s)'):format(args.data.event) }
         )
       end
     end,
   })
 
-  vim.api.nvim_create_autocmd('BufRead', {
+  vim.api.nvim_create_autocmd('BufReadPost', {
     group = augroup,
     callback = function(args)
       local buftype = vim.bo[args.buf].buftype
-      if buftype ~= '' then
+      if buftype ~= '' or buftype == 'nofile' or buftype == 'prompt' or buftype == 'quickfix' then
         return
       end
 
-      if args.file == nil or args.file == '' then
-        return
-      end
+      deferred:start(function()
+        if not vim.api.nvim_buf_is_valid(args.buf) then
+          return
+        end
 
-      local attached_clients = vim.lsp.get_clients({ bufnr = args.buf })
+        local clients = vim.lsp.get_clients({ bufnr = args.buf })
+        if #clients > 0 then
+          return
+        end
 
-      -- Only apply if no LSP is attached for this buffer
-      if #attached_clients > 0 then
-        return
-      end
-
-      local new_root = M.resolve_root(args.buf)
-
-      if new_root == nil then
-        return
-      end
-
-      if change_root(new_root) then
-        emit_rooted({
-          event = 'BUF',
-          root = new_root,
-        })
-      end
+        local new_root = M.resolve_root(args.buf)
+        if new_root and change_root(new_root) then
+          emit_rooted({ event = 'BUF', root = new_root })
+        end
+      end, 250)
     end,
   })
 
   vim.api.nvim_create_autocmd('LspAttach', {
     group = augroup,
     callback = function(args)
-      ---@type vim.lsp.Client|nil
-      local client = vim.lsp.get_client_by_id(args.data.client_id) ---@type table|nil
-      if client == nil then
+      local client = vim.lsp.get_client_by_id(args.data.client_id)
+      if not client then
         return
       end
 
-      ---@type string|nil
-      local root = resolve_client_root(client)
+      deferred:cancel()
 
+      local root = resolve_client_root(client)
       if change_root(root) then
-        emit_rooted({
-          event = 'LSP',
-          root = root,
-        })
+        emit_rooted({ event = 'LSP', root = root })
+        M.root_cache:add(root)
       end
     end,
   })
 end
 
 function M.dump_cache()
-  dd(M.root_cache)
+  M.root_cache:dump()
 end
 
 return M

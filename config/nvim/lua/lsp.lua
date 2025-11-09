@@ -43,7 +43,8 @@ local enabled_lsps = {
   'html', -- Html
   'jsonls', -- Json
   'cssls', -- Css
-  'taplo', -- Toml
+  -- 'taplo', -- Toml
+  'tombi', -- Toml
   'lemminx', -- XML
   'yamlls', -- Yaml
 

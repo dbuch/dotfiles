@@ -33,7 +33,7 @@ return {
         -- typescriptreact = { 'prettier', name = 'dprint', timeout_ms = 500, lsp_format = 'fallback' },
         lua = { 'stylua' },
         python = { 'ruff_format' },
-        toml = { 'taplo' },
+        tombi = { name = 'tombi', timeout_ms = 500, lsp_format = 'prefer' },
         c = { 'uncrustify' },
         just = { 'just' },
         rust = { name = 'rust_analyzer', timeout_ms = 500, lsp_format = 'prefer' },

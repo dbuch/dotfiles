@@ -11,7 +11,6 @@
 [core]
   editor = nvim
   pager = delta
-  excludesfile = ~/.gitignore        # Global gitignore file
 
 [init]
   defaultBranch = main

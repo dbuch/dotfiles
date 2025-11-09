@@ -18,18 +18,40 @@ local function emit_rooted(data)
 end
 
 ---@param root string|nil
+---@return string|nil
+local function normalize_root(root)
+  if root == nil then
+    return
+  end
+  return vim.fs.normalize(vim.fn.fnamemodify(root, ':p'))
+end
+
+---@param root string|nil
 local function change_root(root)
   if root == nil then
     return false
   end
 
-  local current_cwd = vim.fn.getcwd()
-
-  if current_cwd == root then
+  local cwd = vim.fn.getcwd()
+  if normalize_root(cwd) == root then
     return false
   end
 
   return vim.fn.chdir(root) ~= ''
+end
+
+---@param client vim.lsp.Client
+---@return string|nil
+local function resolve_client_root(client)
+  ---@type string|nil
+  local root = nil
+  if client.config.workspace_folders ~= nil and #client.config.workspace_folders > 0 then
+    root = client.config.workspace_folders[1].uri
+  else
+    root = client.config.root_dir
+  end
+
+  return root
 end
 
 ---@param buf_num? number
@@ -62,7 +84,7 @@ function M.resolve_root(buf_num)
     return
   end
 
-  root = vim.fs.normalize(vim.fn.fnamemodify(root, ':p'))
+  root = normalize_root(root)
 
   M.root_cache[dir_path] = root
   return root
@@ -76,14 +98,16 @@ function M.setup()
     callback = function(args)
       local data = args.data
       if data and data.root then
-        vim.notify(data.root:gsub(vim.env.HOME, '~'), vim.log.levels.INFO, {
-          annote = ('New Working Directory (%s)'):format(data.event),
-        })
+        vim.notify(
+          data.root:gsub(vim.env.HOME, '~'),
+          vim.log.levels.INFO,
+          { annote = ('Workspace Directory (%s)'):format(data.event) }
+        )
       end
     end,
   })
 
-  vim.api.nvim_create_autocmd('BufEnter', {
+  vim.api.nvim_create_autocmd('BufRead', {
     group = augroup,
     callback = function(args)
       if args.file == nil or args.file == '' then
@@ -93,8 +117,7 @@ function M.setup()
       local attached_clients = vim.lsp.get_clients({ bufnr = args.buf })
 
       -- Only apply if no LSP is attached for this buffer
-      local has_lsp = #attached_clients <= 0
-      if has_lsp then
+      if #attached_clients > 0 then
         return
       end
 
@@ -123,12 +146,7 @@ function M.setup()
       end
 
       ---@type string|nil
-      local root = nil
-      if client.config.workspace_folders ~= nil and #client.config.workspace_folders > 0 then
-        root = client.config.workspace_folders[1].uri
-      else
-        root = client.config.root_dir
-      end
+      local root = resolve_client_root(client)
 
       if change_root(root) then
         emit_rooted({
@@ -138,6 +156,10 @@ function M.setup()
       end
     end,
   })
+end
+
+function M.dump_cache()
+  dd(M.root_cache)
 end
 
 return M

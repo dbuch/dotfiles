@@ -16,7 +16,7 @@ local function normalize(path)
   end
 
   local is_file = stat.type == 'file'
-  if not is_file then
+  if is_file then
     normalized = vim.fs.dirname(normalized)
   end
 
@@ -185,6 +185,13 @@ function M.setup()
 
         local clients = vim.lsp.get_clients({ bufnr = args.buf })
         if #clients > 0 then
+          for _, client in ipairs(clients) do
+            local client_root = resolve_client_root(client)
+            if client_root and change_root(client_root) then
+              emit_rooted({ event = 'LSP', root = client_root })
+              return
+            end
+          end
           return
         end
 

@@ -4,6 +4,25 @@ notARepository: quit
 disableStartupPopups: true
 promptToReturnFromSubprocess: false
 quitOnTopLevelReturn: true
+confirmOnQuit: true
+
+git:
+  skipHookPrefix: WIP
+  autoFetch: true
+  autoRefresh: true
+  autoForwardBranches: onlyMainBranches
+  fetchAll: true
+  autoStageResolvedConflicts: true
+  branchLogCmd: git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName} --}
+  ignoreWhitespaceInDiffView: false
+  diffContextSize: 3
+  renameSimilarityThreshold: 50
+  overrideGpg: false
+  disableForcePushing: false
+  parseEmoji: true
+  localBranchSortOrder: date
+  remoteBranchSortOrder: date
+  truncateCopiedCommitHashesTo: 12
 
 gui:
   theme:
@@ -60,10 +79,8 @@ keybinding:
     rangeSelectUp: <s-up>
     prevBlock: <left>
     nextBlock: <right>
-    prevBlock-alt: h
-    nextBlock-alt: l
-    nextBlock-alt2: <tab>
-    prevBlock-alt2: <backtab>
+    nextBlock-alt: <tab>
+    prevBlock-alt: <backtab>
     jumpToBlock:
       - "1"
       - "2"
@@ -103,8 +120,8 @@ keybinding:
     pullFiles: p
     refresh: R
     createPatchOptionsMenu: <c-p>
-    nextTab: ']'
-    prevTab: '['
+    nextTab: 'l'
+    prevTab: 'h'
     nextScreenMode: +
     prevScreenMode: _
     cyclePagers: '|'

@@ -185,19 +185,12 @@ function M.setup()
 
         local clients = vim.lsp.get_clients({ bufnr = args.buf })
         if #clients > 0 then
-          for _, client in ipairs(clients) do
-            local client_root = resolve_client_root(client)
-            if client_root and change_root(client_root) then
-              emit_rooted({ event = 'LSP', root = client_root })
-              return
-            end
-          end
           return
         end
 
         local new_root = M.resolve_root(args.buf)
         if new_root and change_root(new_root) then
-          emit_rooted({ event = 'BUF', root = new_root })
+          emit_rooted({ event = 'GIT', root = new_root })
         end
       end, 250)
     end,

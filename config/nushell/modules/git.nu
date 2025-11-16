@@ -70,11 +70,11 @@ def parse_porcelain [] {
     # put XY's in seperate tables instead
     # Make decision from first two colmns [1: type, 2: [staging, worktree]]
     # WorktreeChanges = [
-    #     { type, ...}    
+    #     { type, ...}
     #     ...
     # ]
     # StagingChanges = [
-    #     { type, ...}    
+    #     { type, ...}
     #     ...
     # ]
     # let type_ws = ($line | str substring 0..4 | split column ' ' type ws)
@@ -83,7 +83,7 @@ def parse_porcelain [] {
 
     let type = ($line | str substring 0..1)
     match $type {
-      '1' => { 
+      '1' => {
         $status.OrdinaryChanges = ($status.OrdinaryChanges | append (parse_ordinary $line))
       },
       '2' => {
@@ -102,7 +102,7 @@ def parse_porcelain [] {
       },
     }
 
-    $status    
+    $status
   })
 
   return $parsed_status
@@ -111,7 +111,7 @@ def parse_porcelain [] {
 export def "git porcelain" [
   --branch
   --show-stash
-] nothing -> table {
+]: nothing -> table {
 
   let status = (do --env { git --no-optional-locks status --porcelain=2 --branch --show-stash } | complete)
   if ($status.exit_code == 128) {

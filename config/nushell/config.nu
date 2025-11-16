@@ -1,6 +1,7 @@
 use prompt.nu pre_prompt_hook
 use prompt.nu create_left_prompt
 use prompt.nu create_right_prompt
+use completion.nu completer
 
 $env.config = ($env.config? | default {} | merge {
   buffer_editor: nvim
@@ -55,21 +56,7 @@ $env.config = ($env.config? | default {} | merge {
 $env.config.completions.external = {
   enable: true
   max_results: 100
-  completer: {|spans: list<string>|
-    let expanded_alias = (scope aliases | where name == $spans.0 | get -o expansion.0)
-
-    let tokens = (if $expanded_alias != null {
-      $spans | skip 1 | prepend ($expanded_alias | split row " " | take 1)
-    } else {
-      $spans
-    })
-
-    let cmd = $tokens.0 | str trim --left --char '^'
-
-    carapace $cmd nushell ...$tokens
-      | from json
-      | if ($in | default [] | where value =~ '^-.*ERR$' | is-empty) { $in } else { null }
-  }
+  completer: {|spans| completer $spans}
 }
 
 $env.PROMPT_COMMAND = {|| create_left_prompt }

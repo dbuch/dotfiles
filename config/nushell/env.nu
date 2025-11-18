@@ -86,11 +86,3 @@ $env.NU_PLUGIN_DIRS = [
     ($nu.config-path | path dirname | path join 'plugins')]
 
 $env.SHELL = $nu.current-exe
-
-def "git poh" [] {
-  git pull origin (git rev-parse --abbrev-ref HEAD)
-}
-
-def "git puh" [] {
-  git pull upstream (git rev-parse --abbrev-ref HEAD)
-}

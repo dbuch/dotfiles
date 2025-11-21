@@ -49,7 +49,7 @@ local enabled_lsps = {
   'yamlls', -- Yaml
 
   -- Programming
-  'rust_analyzer',
+  -- 'rust_analyzer',
   'lua_ls',
   'clangd',
 

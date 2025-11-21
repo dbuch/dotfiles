@@ -1,26 +1,34 @@
 local M = {}
 
+local function current_cwd()
+  local cwd = vim.fn.getcwd()
+  if cwd:sub(-1) ~= '/' then
+    cwd = cwd .. '/'
+  end
+  return cwd
+end
+
 ---Normalize a path to an absolute directory.
 ---Expands ~, $VAR, resolves relative paths.
 ---@param path string?
 ---@return string? Fully normalized absolute directory path
 local function normalize(path)
-  if not path or path == '' then
-    return nil
-  end
-
-  local normalized = vim.fs.normalize(path)
-  local stat = vim.uv.fs_stat(normalized)
+  path = vim.fs.normalize(path)
+  local stat = vim.uv.fs_stat(path)
   if not stat then
     return nil
   end
 
   local is_file = stat.type == 'file'
   if is_file then
-    normalized = vim.fs.dirname(normalized)
+    return vim.fs.dirname(path)
   end
 
-  return normalized
+  if path:sub(-1) ~= '/' then
+    path = path .. '/'
+  end
+
+  return path
 end
 
 local deferred = require('dbuch.deferred')
@@ -58,6 +66,10 @@ end
 ---@param root string
 ---@return boolean if path is descendant of root
 local function is_descendant(path, root)
+  if root:sub(-1) ~= '/' then
+    root = root .. '/'
+  end
+
   return path:sub(1, #root) == root
 end
 
@@ -83,7 +95,10 @@ function RootCache:dump()
   end
 end
 
-M.root_cache = RootCache:new()
+---@type RootCache
+---@private
+M._root_cache = RootCache:new()
+
 M.root_identifiers = { '.git' }
 
 ----------------------------------------------------------
@@ -100,7 +115,7 @@ end
 
 ---@param root string
 local function change_root(root)
-  local cwd = vim.fn.getcwd()
+  local cwd = current_cwd()
 
   if cwd == root then
     return false
@@ -109,11 +124,26 @@ local function change_root(root)
   return vim.fn.chdir(root) ~= ''
 end
 
+---@param client vim.lsp.Client
+---@return string?
 local function resolve_client_root(client)
-  if client.config.workspace_folders and #client.config.workspace_folders > 0 then
-    return vim.uri_to_fname(client.config.workspace_folders[1].uri)
+  local workspace_capability = client.server_capabilities.workspace
+
+  ---@type lsp.WorkspaceFolder[]?
+  local workspace_folders = client.config.workspace_folders
+
+  if
+    workspace_capability
+    and workspace_capability.workspaceFolders
+    and workspace_capability.workspaceFolders.supported
+    and workspace_folders
+    and workspace_folders[1]
+    and workspace_folders[1].uri
+  then
+    return normalize(vim.uri_to_fname(workspace_folders[1].uri))
+  else
+    return normalize(client.config.root_dir)
   end
-  return client.config.root_dir
 end
 
 ----------------------------------------------------------
@@ -133,7 +163,7 @@ function M.resolve_root(buf_num)
   local dir_path = normalize(path)
 
   -- 1. Cache check
-  local cached = M.root_cache:get(dir_path)
+  local cached = M._root_cache:get(dir_path)
   if cached then
     return cached
   end
@@ -148,11 +178,15 @@ function M.resolve_root(buf_num)
     return nil
   end
 
-  return M.root_cache:add(matches[1])
+  local root = matches[1]
+  return M._root_cache:add(root)
 end
 
 ---@private
 M._running = {}
+
+---@private
+M._git = require('dbuch.git').new()
 
 function M.setup()
   local augroup = vim.api.nvim_create_augroup('dbuch_rooter', { clear = true })
@@ -170,7 +204,7 @@ function M.setup()
     end,
   })
 
-  vim.api.nvim_create_autocmd('BufReadPost', {
+  vim.api.nvim_create_autocmd('BufRead', {
     group = augroup,
     callback = function(args)
       local buftype = vim.bo[args.buf].buftype
@@ -178,19 +212,20 @@ function M.setup()
         return
       end
 
+      local clients = vim.lsp.get_clients({ bufnr = args.buf })
+      if #clients > 0 then
+        return
+      end
+
+      -- Give a chance to LspAttach to fire before we proceed with git
       deferred:start(function()
         if not vim.api.nvim_buf_is_valid(args.buf) then
           return
         end
 
-        local clients = vim.lsp.get_clients({ bufnr = args.buf })
-        if #clients > 0 then
-          return
-        end
-
         local new_root = M.resolve_root(args.buf)
         if new_root and change_root(new_root) then
-          emit_rooted({ event = 'GIT', root = new_root })
+          emit_rooted({ event = 'BUF', root = new_root })
         end
       end, 250)
     end,
@@ -207,16 +242,16 @@ function M.setup()
       deferred:cancel()
 
       local root = resolve_client_root(client)
-      if change_root(root) then
+      if root and change_root(root) then
         emit_rooted({ event = 'LSP', root = root })
-        M.root_cache:add(root)
+        M._root_cache:add(root)
       end
     end,
   })
 end
 
 function M.dump_cache()
-  M.root_cache:dump()
+  M._root_cache:dump()
 end
 
 return M

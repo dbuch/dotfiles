@@ -1,4 +1,4 @@
----@class GitExt
+---@class Git
 ---@field private toplevel_cache table<string, string>
 ---@field private ignored_cache table<string, string[]>
 local M = {}
@@ -13,9 +13,10 @@ function M.new()
 end
 
 ---@param path string|nil
----@return string|nil
+---@return string?
 function M:get_toplevel(path)
-  path = path or vim.fn.getcwd()
+  path = vim.fs.dirname(path or vim.fn.getcwd())
+
   if self.toplevel_cache[path] ~= nil then
     return self.toplevel_cache[path]
   end

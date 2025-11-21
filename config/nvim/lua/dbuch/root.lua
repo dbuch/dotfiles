@@ -13,6 +13,9 @@ end
 ---@param path string?
 ---@return string? Fully normalized absolute directory path
 local function normalize(path)
+  if path == nil then
+    return nil
+  end
   path = vim.fs.normalize(path)
   local stat = vim.uv.fs_stat(path)
   if not stat then
@@ -135,13 +138,14 @@ local function resolve_client_root(client)
   if
     workspace_capability
     and workspace_capability.workspaceFolders
-    and workspace_capability.workspaceFolders.supported
     and workspace_folders
     and workspace_folders[1]
     and workspace_folders[1].uri
   then
     return normalize(vim.uri_to_fname(workspace_folders[1].uri))
-  else
+  end
+
+  if client.config.root_dir then
     return normalize(client.config.root_dir)
   end
 end
@@ -239,8 +243,11 @@ function M.setup()
         return
       end
 
-      deferred:cancel()
+      if client:is_stopped() then
+        return
+      end
 
+      deferred:cancel()
       local root = resolve_client_root(client)
       if root and change_root(root) then
         emit_rooted({ event = 'LSP', root = root })

@@ -211,7 +211,7 @@ function M.setup()
       end
 
       -- Give a chance to LspAttach to fire before we proceed with git
-      deferred:start(function()
+      deferred:start(250, function()
         if not vim.api.nvim_buf_is_valid(args.buf) then
           return
         end
@@ -220,7 +220,7 @@ function M.setup()
         if new_root and change_root(new_root) then
           emit_rooted({ event = 'BUF', root = new_root })
         end
-      end, 250)
+      end)
     end,
   })
 

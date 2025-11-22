@@ -8,22 +8,20 @@ Deferred.__index = Deferred
 ---Create a new deferred task
 ---@param fn fun() The function to run
 ---@param timeout integer Delay in milliseconds
----@param buf? integer Optional buffer ID (for tracking per-buffer)
-function Deferred.new(fn, timeout, buf)
+function Deferred.new(fn, timeout)
   local self = setmetatable({
     _timer = nil,
     _running = false,
-    _buf = buf,
   }, Deferred)
 
-  self:start(fn, timeout)
+  self:start(timeout, fn)
   return self
 end
 
 ---Start (or restart) the deferred function
+---@param timeout integer in milliseconds
 ---@param fn fun()
----@param timeout integer
-function Deferred:start(fn, timeout)
+function Deferred:start(timeout, fn)
   self:cancel() -- cancel any previous timer
   self._running = true
   self._timer = vim.defer_fn(function()
@@ -47,13 +45,6 @@ end
 ---@return boolean
 function Deferred:is_running()
   return self._running
-end
-
----Optional: check if this task is tied to a buffer
----@param buf integer
----@return boolean
-function Deferred:matches_buf(buf)
-  return self._buf ~= nil and self._buf == buf
 end
 
 return Deferred

@@ -1,18 +1,10 @@
 local M = {}
 
-local function current_cwd()
-  local cwd = vim.fn.getcwd()
-  if cwd:sub(-1) ~= '/' then
-    cwd = cwd .. '/'
-  end
-  return cwd
-end
-
 ---Normalize a path to an absolute directory.
 ---Expands ~, $VAR, resolves relative paths.
 ---@param path string?
 ---@return string? Fully normalized absolute directory path
-local function normalize(path)
+local function normalize_dir(path)
   if path == nil then
     return nil
   end
@@ -24,7 +16,7 @@ local function normalize(path)
 
   local is_file = stat.type == 'file'
   if is_file then
-    return vim.fs.dirname(path)
+    path = vim.fs.dirname(path)
   end
 
   if path:sub(-1) ~= '/' then
@@ -34,7 +26,9 @@ local function normalize(path)
   return path
 end
 
-local deferred = require('dbuch.deferred')
+local function current_cwd()
+  return normalize_dir(vim.fn.getcwd())
+end
 
 ---@class RooterCallbackArgs
 ---@field event string
@@ -54,7 +48,7 @@ end
 ---@param root string?
 ---@return string? ---normalized and dirname
 function RootCache:add(root)
-  local normalized = normalize(root)
+  local normalized = normalize_dir(root)
   if not normalized or normalized == '' then
     return
   end
@@ -69,10 +63,6 @@ end
 ---@param root string
 ---@return boolean if path is descendant of root
 local function is_descendant(path, root)
-  if root:sub(-1) ~= '/' then
-    root = root .. '/'
-  end
-
   return path:sub(1, #root) == root
 end
 
@@ -142,11 +132,11 @@ local function resolve_client_root(client)
     and workspace_folders[1]
     and workspace_folders[1].uri
   then
-    return normalize(vim.uri_to_fname(workspace_folders[1].uri))
+    return normalize_dir(vim.uri_to_fname(workspace_folders[1].uri))
   end
 
   if client.config.root_dir then
-    return normalize(client.config.root_dir)
+    return normalize_dir(client.config.root_dir)
   end
 end
 
@@ -164,15 +154,13 @@ function M.resolve_root(buf_num)
     return nil
   end
 
-  local dir_path = normalize(path)
+  local dir_path = normalize_dir(path)
 
-  -- 1. Cache check
   local cached = M._root_cache:get(dir_path)
   if cached then
     return cached
   end
 
-  -- 2. Upward search for markers
   local matches = vim.fs.find(M.root_identifiers, {
     path = dir_path,
     upward = true,
@@ -194,6 +182,7 @@ M._git = require('dbuch.git').new()
 
 function M.setup()
   local augroup = vim.api.nvim_create_augroup('dbuch_rooter', { clear = true })
+  local deferred = require('dbuch.deferred')
 
   vim.api.nvim_create_autocmd('User', {
     pattern = 'Rooted',

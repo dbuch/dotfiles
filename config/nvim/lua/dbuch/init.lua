@@ -1,3 +1,5 @@
+_G.Utils = safe_require('dbuch.utils')
+
 local NvimTrait = require('dbuch.traits.nvim')
 NvimTrait.lazy_notify()
 

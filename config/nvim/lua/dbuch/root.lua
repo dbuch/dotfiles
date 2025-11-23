@@ -1,14 +1,32 @@
 local M = {}
 
----Normalize a path to an absolute directory.
----Expands ~, $VAR, resolves relative paths.
----@param path string?
----@return string? Fully normalized absolute directory path
+---Normalize a path to a fully absolute directory.
+---
+---This performs:
+---  • Expansion of "~" and environment variables such as "$VAR"
+---  • Path normalization (slashes, ".", "..", Windows paths)
+---  • Conversion to an absolute path
+---  • Resolution of files to their containing directory
+---  • Ensuring the returned directory ends with a trailing "/"
+---
+---If the path does not exist on disk, the function returns nil.
+---
+---Examples:
+---   normalize_dir("~/config")        --> "/home/user/config/"
+---   normalize_dir("foo/../bar.txt")  --> "/cwd/bar/"
+---   normalize_dir("/tmp/file")       --> "/tmp/"
+---
+---@param path string|nil Path to normalize.
+---@return string? absolute_dir Fully normalized absolute directory path,
+---or nil if the path does not exist.
 local function normalize_dir(path)
   if path == nil then
     return nil
   end
+
   path = vim.fs.normalize(path)
+  path = vim.fs.abspath(path)
+
   local stat = vim.uv.fs_stat(path)
   if not stat then
     return nil
@@ -45,7 +63,7 @@ function RootCache:new()
   }, RootCache)
 end
 
----@param root string?
+---@param root string
 ---@return string? ---normalized and dirname
 function RootCache:add(root)
   local normalized = normalize_dir(root)

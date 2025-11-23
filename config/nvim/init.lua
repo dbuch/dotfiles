@@ -1,21 +1,5 @@
 vim.loader.enable()
 
----@param modname string
----@return boolean|any
-_G.safe_require = function(modname)
-  --- @diagnostic disable-next-line: no-unknown
-  local ok, mod = xpcall(require, debug.traceback, modname)
-  if not ok then
-    vim.schedule(function()
-      error(mod)
-    end)
-    return nil
-  end
-  return mod
-end
-
-_G.Utils = require('dbuch.utils')
-
 -- Early Configuration
 vim.g.loaded_matchit = 1
 vim.g.loaded_netrwPlugin = 1
@@ -30,6 +14,37 @@ vim.g.loaded_ruby_provider = 0
 
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+
+---Safely require a Lua module.
+---
+---This behaves like `require()`, but prevents hard errors during startup or
+---runtime. If the module fails to load, an error notification is shown using
+---`vim.notify()`, and `nil` is returned instead of raising an exception.
+---
+---This is useful when:
+---  • Loading optional plugins or dependencies
+---  • Loading user configuration modules that may not exist
+---  • Avoiding `pcall(require, ...)` boilerplate everywhere
+---
+---Example:
+---```lua
+---local mod = safe_require("dbuch")
+---if mod then
+---  mod.do_something()
+---end
+---```
+---
+---@param modname string
+---@return any|nil
+_G.safe_require = function(modname)
+  --- @diagnostic disable-next-line: no-unknown
+  local ok, res = pcall(require, modname)
+  if not ok then
+    vim.notify(('Failed to load `%s`: %s'):format(modname, res), vim.log.levels.ERROR)
+    return nil
+  end
+  return res
+end
 
 -- Bootstrap
 ---@type string

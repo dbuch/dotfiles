@@ -84,55 +84,6 @@ function M.inlay_hint_toggle()
   return toggle_value
 end
 
-function M.smart_q()
-  -- Quit current buffer if it NOT writeflag
-  -- Quit criteria:
-  --   if write but emtpy and nofile -> force quit
-  --   if #openbuffers <= 1 exit (But prompt?)
-
-  local current_buf = vim.api.nvim_get_current_buf()
-  if not vim.bo[current_buf].modified then
-    vim.api.nvim_buf_delete(current_buf, {})
-  end
-
-  local loaded_buffers =
-    vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
-
-  local buf_is_file = function(window)
-    local window_buf = vim.api.nvim_win_get_buf(window)
-    return vim.bo[window_buf].buftype ~= ''
-  end
-
-  local windows = vim.iter(vim.api.nvim_list_wins()):filter(buf_is_file):totable()
-
-  if #loaded_buffers <= 1 then
-    vim.cmd('q')
-    return
-  end
-
-  if #loaded_buffers - 1 <= 1 then
-    vim.notify('Last buf')
-  end
-
-  -- local valid_buf = function(window)
-  --   if not vim.api.nvim_win_is_valid(window) then
-  --     return false
-  --   end
-  --
-  --   local buffer = vim.api.nvim_win_get_buf(window)
-  --   return vim.bo[buffer].buftype == ''
-  -- end
-  --
-  -- local open_windows = vim.iter(vim.api.nvim_list_wins()):filter(valid_buf):totable()
-  -- if #open_windows == 1 then
-  --   vim.cmd 'q'
-  --   return
-  -- end
-  --
-  -- local window = vim.api.nvim_get_current_win()
-  -- vim.api.nvim_win_close(window, false)
-end
-
 ---@param bufnr? integer
 function M.set_close_with_q(bufnr)
   vim.bo[bufnr].buflisted = false

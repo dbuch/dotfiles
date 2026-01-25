@@ -17,6 +17,7 @@ return {
           disable_inline_completion = true, -- disables inline completion for use with cmp
           disable_keymaps = true, -- disables built in keymaps for more manual control
           register_cmp = false,
+          ignore_filetypes = { 'bigfile', 'snacks_input', 'snacks_notif' },
         },
       },
       {
@@ -122,7 +123,11 @@ return {
 
       sources = {
         --default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
-        default = { 'supermaven', 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        default = { 'supermaven', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+
+        per_filetype = {
+          lua = { inherit_defaults = true, 'lazydev' },
+        },
 
         providers = {
           path = {

@@ -214,7 +214,7 @@ def repo_structured [] {
 
 
 def pwd-short [] {
-  $env.PWD | str replace $nu.home-path '~'
+  $env.PWD | str replace $nu.home-dir '~'
 }
 # Nushell Environment Config File
 
@@ -447,7 +447,7 @@ export def create_left_prompt [] {
         $"(ansi green_bold)($env.PWD)"
     }
 
-    $path_segment | str replace $nu.home-path '~'
+    $path_segment | str replace $nu.home-dir '~'
 }
 
 export def create_right_prompt [] {

@@ -75,3 +75,8 @@ source "aliases.nu"
 use commands.nu psub
 
 source "auth/api_key.nu"
+
+use auto-pair.nu *
+set auto_pair_keybindings
+use matchit.nu *
+set matchit_keybinding

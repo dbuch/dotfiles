@@ -1,7 +1,7 @@
 vim.opt.backup = true
 vim.opt.backupdir:remove('.')
 vim.opt.breakindent = true
---vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus'
+vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus'
 vim.opt.expandtab = true
 
 vim.opt.confirm = true
@@ -27,7 +27,7 @@ vim.opt.startofline = false
 vim.opt.swapfile = false
 vim.opt.termguicolors = true
 vim.opt.textwidth = 80
-vim.opt.virtualedit = 'block'
+vim.opt.virtualedit:append('block')
 vim.opt.winblend = 4
 vim.opt.pumblend = 4
 vim.opt.pumheight = 10
@@ -111,39 +111,12 @@ vim.opt.grepprg = 'rg --vimgrep'
 -- session
 vim.opt.sessionoptions = { 'buffers', 'curdir', 'winsize', 'help', 'globals', 'skiprtp', 'folds' }
 
--- INFO: settings to set nushell as the shell for the :! command
--- --
--- path to the Nushell executable
+-- nushell
+vim.opt.sh = 'nu'
+vim.opt.shelltemp = false
+vim.opt.shellredir = 'out+err> %s'
+vim.opt.shellcmdflag = '--stdin --no-newline -c'
 
--- vim.opt.sh = 'nu'
-
--- -- WARN: disable the usage of temp files for shell commands
--- -- because Nu doesn't support `input redirection` which Neovim uses to send buffer content to a command:
--- --      `{shell_command} < {temp_file_with_selected_buffer_content}`
--- -- When set to `false` the stdin pipe will be used instead.
--- -- NOTE: some info about `shelltemp`: https://github.com/neovim/neovim/issues/1008
--- vim.opt.shelltemp = false
---
--- -- string to be used to put the output of shell commands in a temp file
--- -- 1. when 'shelltemp' is `true`
--- -- 2. in the `diff-mode` (`nvim -d file1 file2`) when `diffopt` is set
--- --    to use an external diff command: `set diffopt-=internal`
--- vim.opt.shellredir = 'out+err> %s'
---
--- -- flags for nu:
--- -- * `--stdin`       redirect all input to -c
--- -- * `--no-newline`  do not append `\n` to stdout
--- -- * `--commands -c` execute a command
--- vim.opt.shellcmdflag = '--stdin --no-newline -c'
---
--- -- disable all escaping and quoting
--- vim.opt.shellxescape = ''
--- vim.opt.shellxquote = ''
--- vim.opt.shellquote = ''
---
--- -- string to be used with `:make` command to:
--- -- 1. save the stderr of `makeprg` in the temp file which Neovim reads using `errorformat` to populate the `quickfix` buffer
--- -- 2. show the stdout, stderr and the return_code on the screen
--- -- NOTE: `ansi strip` removes all ansi coloring from nushell errors
--- vim.opt.shellpipe =
---   '| complete | update stderr { ansi strip } | tee { get stderr | save --force --raw %s } | into record'
+vim.opt.shellxescape = ''
+vim.opt.shellxquote = ''
+vim.opt.shellquote = ''

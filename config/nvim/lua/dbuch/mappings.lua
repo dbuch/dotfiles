@@ -39,6 +39,21 @@ map('n', 'sw', function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('saiw', false, false, false), 'm', false)
 end, { expr = true })
 
+map('n', '<leader>v', function()
+  local current_win = vim.api.nvim_get_current_win()
+
+  local current_ve =
+    vim.api.nvim_get_option_value('virtualedit', { scope = 'local', win = current_win })
+
+  if current_ve == '' then
+    vim.api.nvim_set_option_value('virtualedit', 'all', { scope = 'local', win = current_win })
+    vim.notify('virtualedit: on')
+  else
+    vim.api.nvim_set_option_value('virtualedit', '', { scope = 'local', win = current_win })
+    vim.notify('virtualedit: off')
+  end
+end, { expr = true })
+
 map('n', '<leader>w', '<esc>:w<CR>', { noremap = false })
 
 -- Clear search

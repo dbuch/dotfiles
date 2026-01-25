@@ -20,48 +20,30 @@ function M.normalize_path(path)
 end
 
 function M.smart_quit()
-  -- Quit current buffer if it NOT writeflag
-  -- Quit criteria:
-  --   if write but emtpy and nofile -> force quit
-  --   if #openbuffers <= 1 exit (But prompt?)
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_win_get_buf(win)
+  local buftype = vim.bo[buf].buftype
 
-  local current_buf = vim.api.nvim_get_current_buf()
-  if not vim.bo[current_buf].modified then
-    vim.api.nvim_buf_delete(current_buf, {})
-  end
-
-  local loaded_buffers =
-    vim.iter(vim.api.nvim_list_bufs()):filter(vim.api.nvim_buf_is_loaded):totable()
-
-  local buf_is_file = function(window)
-    local window_buf = vim.api.nvim_win_get_buf(window)
-    return vim.bo[window_buf].buftype ~= ''
-  end
-
-  local windows = vim.iter(vim.api.nvim_list_wins()):filter(buf_is_file):totable()
-
-  if #loaded_buffers <= 1 then
-    vim.cmd('q')
+  -- Terminals: always close
+  if buftype == 'terminal' then
+    vim.api.nvim_buf_delete(buf, { force = true })
     return
   end
 
-  -- local valid_buf = function(window)
-  --   if not vim.api.nvim_win_is_valid(window) then
-  --     return false
-  --   end
-  --
-  --   local buffer = vim.api.nvim_win_get_buf(window)
-  --   return vim.bo[buffer].buftype == ''
-  -- end
-  --
-  -- local open_windows = vim.iter(vim.api.nvim_list_wins()):filter(valid_buf):totable()
-  -- if #open_windows == 1 then
-  --   vim.cmd 'q'
-  --   return
-  -- end
-  --
-  -- local window = vim.api.nvim_get_current_win()
-  -- vim.api.nvim_win_close(window, false)
+  if vim.bo[buf].modified then
+    vim.ui.select(
+      { 'Save and Close', 'Discard Changes', 'Cancel' },
+      { prompt = 'Buffer has unsaved changes:' },
+      function(choice)
+        if choice == 'Save and Close' then
+          vim.cmd('write')
+          vim.api.nvim_buf_delete(buf, {})
+        elseif choice == 'Discard Changes' then
+          vim.api.nvim_buf_delete(buf, { force = true })
+        end
+      end
+    )
+  end
 end
 
 --- Truncates a string to a specified maximum width and appends an ellipsis character if needed.

@@ -23,6 +23,8 @@ git:
   localBranchSortOrder: date
   remoteBranchSortOrder: date
   truncateCopiedCommitHashesTo: 12
+  # pagers:
+  #   - pager: delta --dark --paging=never
 
 gui:
   theme:

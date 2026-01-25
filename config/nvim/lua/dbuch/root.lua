@@ -108,7 +108,7 @@ end
 
 ---@type RootCache
 ---@private
-M._root_cache = RootCache:new()
+M.cache = RootCache:new()
 
 M.root_identifiers = { '.git' }
 
@@ -174,22 +174,26 @@ function M.resolve_root(buf_num)
 
   local dir_path = normalize_dir(path)
 
-  local cached = M._root_cache:get(dir_path)
+  local cached = M.cache:get(dir_path)
   if cached then
     return cached
   end
 
-  local matches = vim.fs.find(M.root_identifiers, {
-    path = dir_path,
-    upward = true,
-  })
+  local matches = vim
+    .iter(vim.fs.find(M.root_identifiers, {
+      path = dir_path,
+      upward = true,
+    }))
+    :find(function(root)
+      return vim.endswith(root, '.git') == false
+    end)
 
   if not matches or #matches == 0 then
     return nil
   end
 
   local root = matches[1]
-  return M._root_cache:add(root)
+  return M.cache:add(root)
 end
 
 ---@private
@@ -209,13 +213,13 @@ function M.setup()
         vim.notify(
           args.data.root:gsub(vim.env.HOME, '~'),
           vim.log.levels.INFO,
-          { annote = ('Workspace Directory (%s)'):format(args.data.event) }
+          { annotate = ('Workspace Directory (%s)'):format(args.data.event) }
         )
       end
     end,
   })
 
-  vim.api.nvim_create_autocmd('BufRead', {
+  vim.api.nvim_create_autocmd('BufReadPost', {
     group = augroup,
     callback = function(args)
       local buftype = vim.bo[args.buf].buftype
@@ -223,14 +227,17 @@ function M.setup()
         return
       end
 
-      local clients = vim.lsp.get_clients({ bufnr = args.buf })
-      if #clients > 0 then
+      if #vim.lsp.get_clients({ bufnr = args.buf }) > 0 then
         return
       end
 
       -- Give a chance to LspAttach to fire before we proceed with git
-      deferred:start(250, function()
+      deferred:start(500, function()
         if not vim.api.nvim_buf_is_valid(args.buf) then
+          return
+        end
+
+        if #vim.lsp.get_clients({ bufnr = args.buf }) > 0 then
           return
         end
 
@@ -258,14 +265,14 @@ function M.setup()
       local root = resolve_client_root(client)
       if root and change_root(root) then
         emit_rooted({ event = 'LSP', root = root })
-        M._root_cache:add(root)
+        M.cache:add(root)
       end
     end,
   })
 end
 
 function M.dump_cache()
-  M._root_cache:dump()
+  M.cache:dump()
 end
 
 return M

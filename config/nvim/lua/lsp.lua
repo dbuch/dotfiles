@@ -66,6 +66,7 @@ local enabled_lsps = {
 
   -- Writing
   'tinymist',
+  'typos_lsp',
 }
 
 vim.lsp.config('*', {

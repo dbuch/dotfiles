@@ -11,8 +11,12 @@ return {
         show_source = true,
         use_icons_from_diagnostic = true,
         multiple_diag_under_cursor = true,
+        overflow = {
+          mode = 'wrap',
+          padding = 0,
+        },
         multilines = {
-          enabled = false,
+          enabled = true,
         },
         break_line = {
           enabled = true,

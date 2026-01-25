@@ -89,7 +89,7 @@ autocmd('TermOpen', {
   end,
 })
 
-NvimTrait.on_ts_filetype(function(bufnr, lang)
+NvimTrait.on_ts_filetype(function(bufnr, _lang)
   require('dbuch.treesitter').attach(bufnr)
 
   vim.bo[bufnr].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"

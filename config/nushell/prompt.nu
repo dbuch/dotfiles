@@ -99,7 +99,7 @@ def stashed-changes [
 
 export def render_git_status []: nothing -> string {
   let status = (git repo-info)
-  if not $status.is_repo {
+  if $status == null {
     return ''
   }
 

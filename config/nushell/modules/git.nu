@@ -1,338 +1,120 @@
-# Structured git status, exposed as `git <subcommand>` custom commands.
+# Structured git state for display (e.g. in a prompt), as `git state`.
 #
-#   git repo-info     repo-level status: branch, upstream, operation, counts
-#   git changes       per-file status with line stats
-#   git hunks <file>  changed line ranges of one file
+# The name is deliberately one git itself never uses, so it extends `git`
+# without shadowing any real subcommand.
 #
-# These are deliberately named things git itself never uses so they extend
-# `git` without shadowing any real subcommand.
-#
-# Everything is read from plumbing or documented machine-readable formats
-# (porcelain v2, -z, -U0 hunk headers), never from human-oriented output, so
-# it stays stable across git versions, locales and user config.
-#
-# Outside a repo, repo-info returns null and the table commands return [].
+# Everything is read from plumbing, porcelain v2 or git's state files, never
+# from human-oriented output, so it stays stable across git versions, locales
+# and user config.
 
-# root is the work tree's top level, git_dir its (per-worktree) git directory,
-# object_format the hash algorithm (sha1 or sha256).
-export type GitRepo = record<root: path, git_dir: path, object_format: string>
+# root is the work tree's top level, git_dir its (per-worktree) git directory.
+export type GitRepo = record<root: path, git_dir: path>
 
 export type GitAheadBehind = record<ahead: int, behind: int>
 
 # commits is null when the upstream is configured but gone from the remote.
 export type GitUpstream = record<name: string, commits: oneof<GitAheadBehind, nothing>>
 
+# name is rebase, am, merge, cherry-pick, revert or bisect. step/total is the
+# progress through a rebase or am, null for operations without one.
+export type GitOperation = record<name: string, step: oneof<int, nothing>, total: oneof<int, nothing>>
+
 export type GitStaging = record<added: int, modified: int, deleted: int>
 
 export type GitWorktree = record<untracked: int, modified: int, deleted: int>
 
 # branch is the branch name, or `(<short hash>...)` when HEAD is detached.
-# upstream is null for a local-only branch. operation is the multi-step
-# command in progress (rebase, am, merge, cherry-pick, revert, bisect) or null.
-export type GitInfo = record<root: path, branch: string, upstream: oneof<GitUpstream, nothing>, operation: oneof<string, nothing>, staged: GitStaging, worktree: GitWorktree, conflicts: int, stashes: int>
-
-# Line counts against HEAD. Removed and added lines overlapping within a hunk
-# count as changed; the remainder are pure additions or removals.
-export type GitLines = record<added: int, changed: int, removed: int>
-
-# staged/worktree are porcelain v2's X/Y status letters (M, T, A, D, R, C, U,
-# or `.` for unchanged); untracked and ignored entries use `?` and `!` for both.
-export type GitChanges = table<section: string, staged: string, worktree: string, path: string, orig_path: string, lines: GitLines>
-
-# A line range; count 0 means the range is empty and start is the line before it.
-export type GitRange = record<start: int, count: int>
-
-# kind is add, delete or change. removed is the range in the base (HEAD),
-# added the range in the compared file.
-export type GitHunks = table<kind: string, removed: GitRange, added: GitRange>
-
-# Field separator folded into rename records, never present in git data.
-const SEP = "\u{1f}"
-
-const NO_LINES = {added: 0, changed: 0, removed: 0}
-
-# The empty tree per object format: the diff base before the first commit.
-const EMPTY_TREE = {
-  sha1: '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
-  sha256: '6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321'
-}
+# upstream is null for a local-only branch, operation when none is in progress.
+export type GitState = record<root: path, branch: string, upstream: oneof<GitUpstream, nothing>, operation: oneof<GitOperation, nothing>, staged: GitStaging, worktree: GitWorktree, conflicts: int, stashes: int>
 
 # Repo paths for the given path, or null when it isn't inside a work tree.
 def repo-locate []: [nothing -> oneof<GitRepo, nothing>, path -> oneof<GitRepo, nothing>] {
   let path = ($in | default $env.PWD | path expand)
 
-  let result = (^git -C $path rev-parse --show-toplevel --absolute-git-dir --show-object-format | complete)
+  let result = (^git -C $path rev-parse --show-toplevel --absolute-git-dir | complete)
   if $result.exit_code != 0 {
     return null
   }
 
   let lines = ($result.stdout | lines)
-  {root: $lines.0, git_dir: $lines.1, object_format: $lines.2}
+  {root: $lines.0, git_dir: $lines.1}
 }
 
-# Run git at the repo root, erroring with git's stderr on failure.
-def --wrapped git-in [repo: GitRepo, ...args: string]: nothing -> string {
-  let result = (^git -C $repo.root --no-optional-locks ...$args | complete)
+# Porcelain v2 status lines. Paths are never parsed, so -z isn't needed: git
+# quotes unusual paths, keeping every entry on one line.
+def status-lines [repo: GitRepo]: nothing -> list<string> {
+  let result = (^git -C $repo.root --no-optional-locks status --porcelain=2 --branch --show-stash | complete)
 
   if $result.exit_code != 0 {
-    error make {
-      msg: $"git ($args | first) failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"
-    }
+    error make {msg: $"git status failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"}
   }
 
-  $result.stdout
+  $result.stdout | lines
 }
 
-# NUL-terminated output split into its fields.
-def nul-fields []: string -> list<string> {
-  split row (char nul) | compact --empty
-}
-
-# `diff-index -U0` of the worktree (or, with --cached in flags, the index)
-# against HEAD. Prefixes and path quoting are pinned so patch headers are
-# predictable regardless of user config.
-def diff-head [repo: GitRepo, flags: list<string>, paths: list<string> = []]: nothing -> string {
-  let diff = {|base|
-    (^git -C $repo.root --no-optional-locks -c core.quotePath=false
-      diff-index --src-prefix=a/ --dst-prefix=b/ --no-color -U0 ...$flags $base -- ...$paths
-      | complete)
+# A number from one of git's state files, or null when it isn't there.
+def state-number [git_dir: path, file: oneof<string, nothing>]: nothing -> oneof<int, nothing> {
+  if $file == null {
+    return null
   }
 
-  let result = (do $diff HEAD)
-  if $result.exit_code == 0 {
-    return $result.stdout
-  }
-
-  # Before the first commit there is no HEAD; diff against the empty tree.
-  let retry = (do $diff ($EMPTY_TREE | get $repo.object_format))
-  if $retry.exit_code != 0 {
-    error make {msg: $"git diff-index failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"}
-  }
-  $retry.stdout
-}
-
-# A path as a diff header prints it with core.quotePath=false: C-escaped and
-# wrapped in quotes only when it contains `"`, `\` or control characters.
-def c-quote [prefix: string]: string -> string {
-  let path = $"($prefix)($in)"
-  if $path !~ '["\\\x00-\x1f\x7f]' {
-    return $path
-  }
-
-  let escaped = ($path | split chars | each {|c|
-    match $c {
-      '"' => '\"'
-      '\' => '\\'
-      "\u{7}" => '\a'
-      "\u{8}" => '\b'
-      "\t" => '\t'
-      "\n" => '\n'
-      "\u{b}" => '\v'
-      "\u{c}" => '\f'
-      "\r" => '\r'
-      _ if $c =~ '[\x00-\x1f\x7f]' => {
-        let octal = ($c | into binary | into int | format number | get octal | str replace '0o' '')
-        $'\($octal | fill --alignment right --width 3 --character "0")'
-      }
-      _ => $c
-    }
-  } | str join)
-
-  $'"($escaped)"'
-}
-
-# Porcelain v2 -z records. A rename's origPath is its own NUL field; it's
-# folded back into the record after a SEP.
-def status-records [repo: GitRepo]: nothing -> list<string> {
-  let fields = (git-in $repo status --porcelain=2 -z --branch --show-stash | nul-fields)
-
-  mut records: list<string> = []
-  mut i = 0
-  while $i < ($fields | length) {
-    let field = ($fields | get $i)
-    if ($field | str starts-with '2 ') {
-      $records ++= [$"($field)($SEP)($fields | get ($i + 1))"]
-      $i += 2
-    } else {
-      $records ++= [$field]
-      $i += 1
-    }
-  }
-  $records
-}
-
-# `# <key> <value>` header records as a record, e.g. {branch.head: main, stash: '2'}.
-def status-headers []: list<string> -> record {
-  where ($it | str starts-with '# ') | parse '# {key} {value}' | transpose --header-row --as-record
-}
-
-# Porcelain v2 entry records parsed into one row per file (without lines).
-def status-entries []: list<string> -> table<section: string, staged: string, worktree: string, path: string, orig_path: string> {
-  each {|record|
-    match ($record | str substring 0..0) {
-      # 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-      '1' => ($record
-        | parse -r '(?s)^1 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
-        | insert section ordinary | insert orig_path ''),
-      # 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>SEP<origPath>
-      '2' => ($record
-        | parse -r '(?s)^2 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<rest>.*)$'
-        | each {|r|
-            let parts = ($r.rest | split row $SEP)
-            {section: rename, xy: $r.xy, path: $parts.0, orig_path: $parts.1}
-          }),
-      # u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>
-      'u' => ($record
-        | parse -r '(?s)^u (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
-        | insert section unmerged | insert orig_path ''),
-      '?' => ($record | parse -r '(?s)^\? (?<path>.*)$' | insert xy '??' | insert section untracked | insert orig_path ''),
-      '!' => ($record | parse -r '(?s)^! (?<path>.*)$' | insert xy '!!' | insert section ignored | insert orig_path ''),
-      _ => [],
-    }
-  }
-  | flatten
-  | each {|c|
-      {
-        section: $c.section
-        staged: ($c.xy | str substring 0..0)
-        worktree: ($c.xy | str substring 1..1)
-        path: $c.path
-        orig_path: $c.orig_path
-      }
-    }
-}
-
-# Hunks from the `@@ -a[,b] +c[,d] @@` headers of a -U0 patch.
-def patch-hunks []: string -> GitHunks {
-  lines
-  | where ($it | str starts-with '@@ ')
-  | parse -r '^@@ -(?<rs>\d+)(?:,(?<rc>\d+))? \+(?<as>\d+)(?:,(?<ac>\d+))? @@'
-  | each {|h|
-      # An omitted count means 1.
-      let removed = {start: ($h.rs | into int), count: ($h.rc | default -e '1' | into int)}
-      let added = {start: ($h.as | into int), count: ($h.ac | default -e '1' | into int)}
-      {
-        kind: (if $removed.count == 0 { 'add' } else if $added.count == 0 { 'delete' } else { 'change' })
-        removed: $removed
-        added: $added
-      }
-    }
-}
-
-# Line stats keyed by `diff --git` header, from a -U0 patch. One regex pass
-# picks out section and hunk headers in order; a type change prints two
-# sections (delete, then add) under one header, and their stats add up.
-def patch-header-lines []: string -> record {
-  let marks = ($in | parse -r '(?m)^(?:diff --git (?<header>.+)|@@ -\d+(?:,(?<rc>\d+))? \+\d+(?:,(?<ac>\d+))? @@)')
-
-  mut stats = []
-  mut header = ''
-  mut added = 0
-  mut changed = 0
-  mut removed = 0
-  for mark in $marks {
-    # Groups outside the matched alternative come back null.
-    if ($mark.header | is-empty) {
-      # An omitted count means 1.
-      let r = ($mark.rc | default -e '1' | into int)
-      let a = ($mark.ac | default -e '1' | into int)
-      let c = ([$r $a] | math min)
-      $added += $a - $c
-      $changed += $c
-      $removed += $r - $c
-    } else if $mark.header != $header {
-      if $header != '' {
-        $stats ++= [[$header {added: $added, changed: $changed, removed: $removed}]]
-      }
-      $header = $mark.header
-      $added = 0
-      $changed = 0
-      $removed = 0
-    }
-  }
-  if $header != '' {
-    $stats ++= [[$header {added: $added, changed: $changed, removed: $removed}]]
-  }
-
-  $stats | into record
-}
-
-# Line stats keyed by path from `--patch-with-raw -z` output: NUL-separated
-# raw entries (exact paths), an empty field, then the patch. Each entry finds
-# its stats by the header git prints for it, so entries without a section
-# (stat-only changes) simply get no lines.
-def raw-patch-lines []: string -> record {
-  let parts = ($in | split row -n 2 "\u{0}\u{0}")
-  let raw = ($parts.0 | nul-fields)
-  let by_header = ($parts.1? | default '' | patch-header-lines)
-
-  # `:<modes> <hashes> <status>` then the path, or old and new path for R/C.
-  mut by_path = []
-  mut i = 0
-  while $i < ($raw | length) {
-    let status = ($raw | get $i | split row ' ' | last | str substring 0..0)
-    let paths = (if $status in [R C] { $raw | slice ($i + 1)..($i + 2) } else { [($raw | get ($i + 1))] })
-    let old = $paths.0
-    let new = ($paths | last)
-
-    let header = $"($old | c-quote 'a/') ($new | c-quote 'b/')"
-    $by_path ++= [[$new ($by_header | get --optional ([$header] | into cell-path) | default $NO_LINES)]]
-    $i += 1 + ($paths | length)
-  }
-
-  $by_path | into record
-}
-
-# Every line of an untracked text file counts as added. Like git, a NUL in
-# the first 8000 bytes marks the file binary (no lines).
-def untracked-lines [repo: GitRepo, path: string]: nothing -> GitLines {
-  let count = (try {
-    let bytes = (open --raw ($repo.root | path join $path) | into binary)
-    if ($bytes | bytes at 0..<8000 | bytes index-of 0x[00]) != -1 {
-      0
-    } else {
-      $bytes | decode utf-8 | lines | length
-    }
-  } catch { 0 })
-  $NO_LINES | merge {added: $count}
+  try { open --raw ($git_dir | path join $file) | str trim | into int } catch { null }
 }
 
 # The multi-step operation in progress, detected from its state files in git_dir.
-def repo-operation []: GitRepo -> oneof<string, nothing> {
+def repo-operation []: GitRepo -> oneof<GitOperation, nothing> {
   let git_dir = $in.git_dir
 
   # Order matters: rebase-apply/applying (am) must win over plain rebase-apply.
-  [
-    [marker operation];
-    [rebase-merge rebase]
-    [rebase-apply/applying am]
-    [rebase-apply rebase]
-    [MERGE_HEAD merge]
-    [CHERRY_PICK_HEAD cherry-pick]
-    [REVERT_HEAD revert]
-    [BISECT_LOG bisect]
+  let operation = ([
+    [marker name step total];
+    [rebase-merge rebase rebase-merge/msgnum rebase-merge/end]
+    [rebase-apply/applying am rebase-apply/next rebase-apply/last]
+    [rebase-apply rebase rebase-apply/next rebase-apply/last]
+    [MERGE_HEAD merge null null]
+    [CHERRY_PICK_HEAD cherry-pick null null]
+    [REVERT_HEAD revert null null]
+    [BISECT_LOG bisect null null]
   ]
   | where ($git_dir | path join $it.marker | path exists)
-  | get operation
-  | get 0?
+  | get 0?)
+
+  if $operation == null {
+    return null
+  }
+
+  {
+    name: $operation.name
+    step: (state-number $git_dir $operation.step)
+    total: (state-number $git_dir $operation.total)
+  }
 }
 
-# Repo-level status: branch, upstream, operation and change counts.
-export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneof<GitInfo, nothing>] {
+# Repo state for display: branch, upstream, operation and change counts.
+#
+# Takes an optional path as input (default: $env.PWD) and returns null when
+# it isn't inside a git work tree.
+export def "git state" []: [nothing -> oneof<GitState, nothing>, path -> oneof<GitState, nothing>] {
   let repo = ($in | repo-locate)
   if $repo == null {
     return null
   }
 
-  let status = (status-records $repo)
-  let headers = ($status | status-headers)
-  let entries = ($status | status-entries)
+  let status = (status-lines $repo)
+
+  # `# <key> <value>` headers, e.g. {branch.head: main, stash: '2'}.
+  let headers = ($status
+    | where ($it | str starts-with '# ')
+    | parse '# {key} {value}'
+    | transpose --header-row --as-record)
 
   let head: string = $headers.'branch.head'
 
-  let tracked = ($entries | where section in [ordinary rename])
-  let x = ($tracked | get staged)
-  let y = ($tracked | get worktree)
+  # Ordinary (1) and renamed (2) entries start `<type> <X><Y> `: X is the
+  # staged status, Y the worktree status.
+  let tracked = ($status | where ($it =~ '^[12] '))
+  let x = ($tracked | str substring 2..2)
+  let y = ($tracked | str substring 3..3)
 
   {
     root: $repo.root
@@ -353,54 +135,11 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
       deleted: ($x | where $it == 'D' | length)
     }
     worktree: {
-      untracked: ($entries | where section == untracked | length)
+      untracked: ($status | where ($it | str starts-with '? ') | length)
       modified: ($y | where $it in ['M', 'R'] | length)
       deleted: ($y | where $it == 'D' | length)
     }
-    conflicts: ($entries | where section == unmerged | length)
+    conflicts: ($status | where ($it | str starts-with 'u ') | length)
     stashes: ($headers.stash? | default '0' | into int)
   }
-}
-
-# Per-file status: section (ordinary/rename/unmerged/untracked/ignored), the
-# staged and worktree status letters, the path (renames also carry orig_path)
-# and line stats against HEAD.
-export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
-  let repo = ($in | repo-locate)
-  if $repo == null {
-    return []
-  }
-
-  # status and the diff don't depend on each other; run them concurrently.
-  let results = ([
-    { status-records $repo | status-entries }
-    { diff-head $repo [-M --patch-with-raw -z] | raw-patch-lines }
-  ] | par-each --keep-order {|job| do $job })
-  let entries = $results.0
-  let tracked = $results.1
-
-  $entries | each {|e|
-    let lines = (match $e.section {
-      untracked => (untracked-lines $repo $e.path)
-      ignored => $NO_LINES
-      _ => ($tracked | get --optional ([$e.path] | into cell-path) | default $NO_LINES)
-    })
-    $e | insert lines $lines
-  }
-}
-
-# Changed line ranges of one file against HEAD: the worktree copy by default,
-# or the staged copy with --staged. Untracked files have no hunks.
-export def "git hunks" [
-  file: path  # File to diff
-  --staged (-s)  # Compare the index instead of the worktree
-]: nothing -> GitHunks {
-  let file = ($file | path expand)
-  let repo = ($file | path dirname | repo-locate)
-  if $repo == null {
-    return []
-  }
-
-  let cached = (if $staged { [--cached] } else { [] })
-  diff-head $repo [-p ...$cached] [$file] | patch-hunks
 }

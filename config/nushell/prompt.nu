@@ -1,4 +1,4 @@
-use git.nu ["git repo-info" GitInfo]
+use git.nu ["git state" GitState GitOperation]
 
 def pwd-short [] {
   $env.PWD | str replace $nu.home-dir '~'
@@ -10,7 +10,7 @@ def paint [color: string]: string -> string {
 }
 
 # Branch name, colored and marked by how it relates to its upstream.
-def branch-segment []: GitInfo -> string {
+def branch-segment []: GitState -> string {
   let branch = $in.branch
   let upstream = $in.upstream
 
@@ -34,12 +34,23 @@ def branch-segment []: GitInfo -> string {
 }
 
 # [added/untracked modified deleted] as `+a ~m -d`.
+# Operation name with progress when it has one, e.g. `REBASE 2/5`.
+def operation-segment []: GitOperation -> string {
+  let operation = $in
+  let progress = (if $operation.step != null and $operation.total != null {
+    $' ($operation.step)/($operation.total)'
+  } else {
+    ''
+  })
+  $'($operation.name | str uppercase)($progress)' | paint light_red
+}
+
 def counts-segment []: list<int> -> string {
   $'+($in.0) ~($in.1) -($in.2)'
 }
 
 export def render_git_status []: nothing -> string {
-  let info = (git repo-info)
+  let info = (git state)
   if $info == null {
     return ''
   }
@@ -51,7 +62,7 @@ export def render_git_status []: nothing -> string {
 
   let segments = [
     ($info | branch-segment)
-    (if $info.operation != null { $info.operation | str uppercase | paint light_red })
+    (if $info.operation != null { $info.operation | operation-segment })
     (if $has_staged { [$staged.added $staged.modified $staged.deleted] | counts-segment | paint green })
     (if $has_staged and $has_worktree { '|' | paint light_yellow })
     (if $has_worktree { [$worktree.untracked $worktree.modified $worktree.deleted] | counts-segment | paint red })

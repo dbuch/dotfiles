@@ -8,7 +8,8 @@
 
 export type GitChanges = table<section: string, xy: string, path: string, orig_path: string>
 
-export type GitInfo = record<on_named_branch: bool, branch_name: string, commit_hash: string, tracking_upstream_branch: bool, upstream_exists_on_remote: bool, commits_ahead: int, commits_behind: int, stash_count: int, staging_added_count: int, staging_modified_count: int, staging_deleted_count: int, untracked_count: int, worktree_modified_count: int, worktree_deleted_count: int, merge_conflict_count: int>
+# branch_name is null when HEAD is detached; see `git detached`.
+export type GitInfo = record<branch_name: oneof<string, nothing>, commit_hash: string, tracking_upstream_branch: bool, upstream_exists_on_remote: bool, commits_ahead: int, commits_behind: int, stash_count: int, staging_added_count: int, staging_modified_count: int, staging_deleted_count: int, untracked_count: int, worktree_modified_count: int, worktree_deleted_count: int, merge_conflict_count: int>
 
 # Expanded path when it's inside a git work tree, otherwise null.
 def "path is-git" []: [nothing -> oneof<path, nothing>, path -> oneof<path, nothing>] {
@@ -43,96 +44,14 @@ def "git status-raw" []: [nothing -> oneof<list<string>, nothing>, path -> oneof
   $result.stdout | lines
 }
 
-# Structured branch/tracking/change-count summary of the repo.
-#
-# Returns null when the path isn't inside a git repo.
-export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneof<GitInfo, nothing>] {
-  let status = ($in | git status-raw)
-  if $status == null {
-    return null
-  }
-
-  let on_named_branch = not (
-    $status | any {|l| ($l | str starts-with '# branch.head') and ($l | str contains '(detached)') }
-  )
-
-  let branch_name: string = if $on_named_branch {
-    $status | where ($it | str starts-with '# branch.head') | split column ' ' col1 col2 branch | get branch | first
-  } else {
-    ''
-  }
-
-  let commit_hash: string = (
-    $status
-    | where ($it | str starts-with '# branch.oid')
-    | split column ' ' col1 col2 full_hash
-    | get full_hash
-    | first
-    | str substring 0..7
-  )
-
-  let tracking_upstream_branch = ($status | any {|l| $l | str starts-with '# branch.upstream' })
-  let upstream_exists_on_remote = ($status | any {|l| $l | str starts-with '# branch.ab' })
-
-  let ahead_behind: record<ahead: string, behind: string> = if $upstream_exists_on_remote {
-    $status | where ($it | str starts-with '# branch.ab') | split column ' ' col1 col2 ahead behind | first
-  } else {
-    {ahead: '+0', behind: '-0'}
-  }
-
-  let commits_ahead: int = ($ahead_behind.ahead | into int)
-  let commits_behind: int = ($ahead_behind.behind | into int | math abs)
-
-  let has_stash = ($status | any {|l| $l | str starts-with '# stash' })
-  let stash_count: int = if $has_stash {
-    $status | where ($it | str starts-with '# stash') | split column ' ' col1 col2 count | get count | first | into int
-  } else {
-    0
-  }
-
-  let has_staging_or_worktree_changes = (
-    $status | any {|l| ($l | str starts-with '1') or ($l | str starts-with '2') }
-  )
-
-  let staging_worktree: table<staging: string, worktree: string> = if $has_staging_or_worktree_changes {
-    $status
-    | where ($it | str starts-with '1') or ($it | str starts-with '2')
-    | split column ' ' | get column2
-    | split column '' staging worktree --collapse-empty
-  } else {
-    []
-  }
-
-  {
-    on_named_branch: $on_named_branch
-    branch_name: $branch_name
-    commit_hash: $commit_hash
-    tracking_upstream_branch: $tracking_upstream_branch
-    upstream_exists_on_remote: $upstream_exists_on_remote
-    commits_ahead: $commits_ahead
-    commits_behind: $commits_behind
-    stash_count: $stash_count
-    staging_added_count: ($staging_worktree | where staging == 'A' | length)
-    staging_modified_count: ($staging_worktree | where staging in ['M', 'R'] | length)
-    staging_deleted_count: ($staging_worktree | where staging == 'D' | length)
-    untracked_count: ($status | where ($it | str starts-with '?') | length)
-    worktree_modified_count: ($staging_worktree | where worktree in ['M', 'R'] | length)
-    worktree_deleted_count: ($staging_worktree | where worktree == 'D' | length)
-    merge_conflict_count: ($status | where ($it | str starts-with 'u') | length)
-  }
+# `# <key> <value>` header lines as a record, e.g. {branch.head: main, stash: '2'}.
+def status-headers []: list<string> -> record {
+  where ($it | str starts-with '# ') | parse '# {key} {value}' | transpose --header-row --as-record
 }
 
-# Per-file change list: section (ordinary/rename/unmerged/untracked/ignored),
-# the raw XY status code, and the path (renames also carry orig_path).
-#
-# Returns an empty table when the path isn't inside a git repo.
-export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
-  let status = ($in | git status-raw)
-  if $status == null {
-    return []
-  }
-
-  $status | each {|line|
+# Porcelain v2 entry lines parsed into one row per file.
+def status-changes []: list<string> -> GitChanges {
+  each {|line|
     match ($line | str substring 0..0) {
       # 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
       '1' => ($line
@@ -154,4 +73,60 @@ export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
       _ => [],
     }
   } | flatten | select section xy path orig_path
+}
+
+# Structured branch/tracking/change-count summary of the repo.
+#
+# Returns null when the path isn't inside a git repo.
+export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneof<GitInfo, nothing>] {
+  let status = ($in | git status-raw)
+  if $status == null {
+    return null
+  }
+
+  let headers = ($status | status-headers)
+  let changes = ($status | status-changes)
+
+  let head: string = $headers.'branch.head'
+  let ahead_behind: list<string> = ($headers.'branch.ab'? | default '+0 -0' | split row ' ')
+
+  # XY is <staged><worktree> for ordinary and renamed entries.
+  let tracked = ($changes | where section in [ordinary rename])
+  let staged = ($tracked | each { $in.xy | str substring 0..0 })
+  let worktree = ($tracked | each { $in.xy | str substring 1..1 })
+
+  {
+    branch_name: (if $head == '(detached)' { null } else { $head })
+    commit_hash: ($headers.'branch.oid' | str substring 0..7)
+    tracking_upstream_branch: ('branch.upstream' in $headers)
+    upstream_exists_on_remote: ('branch.ab' in $headers)
+    commits_ahead: ($ahead_behind.0 | into int)
+    commits_behind: ($ahead_behind.1 | into int | math abs)
+    stash_count: ($headers.stash? | default '0' | into int)
+    staging_added_count: ($staged | where $it == 'A' | length)
+    staging_modified_count: ($staged | where $it in ['M', 'R'] | length)
+    staging_deleted_count: ($staged | where $it == 'D' | length)
+    untracked_count: ($changes | where section == untracked | length)
+    worktree_modified_count: ($worktree | where $it in ['M', 'R'] | length)
+    worktree_deleted_count: ($worktree | where $it == 'D' | length)
+    merge_conflict_count: ($changes | where section == unmerged | length)
+  }
+}
+
+# Whether HEAD is detached, i.e. not on a named branch.
+export def "git detached" []: GitInfo -> bool {
+  $in.branch_name == null
+}
+
+# Per-file change list: section (ordinary/rename/unmerged/untracked/ignored),
+# the raw XY status code, and the path (renames also carry orig_path).
+#
+# Returns an empty table when the path isn't inside a git repo.
+export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
+  let status = ($in | git status-raw)
+  if $status == null {
+    return []
+  }
+
+  $status | status-changes
 }

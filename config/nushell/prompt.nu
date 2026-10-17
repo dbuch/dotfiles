@@ -1,4 +1,4 @@
-use git.nu "git repo-info"
+use git.nu ["git repo-info" "git detached"]
 
 def pwd-short [] {
   $env.PWD | str replace $nu.home-dir '~'
@@ -134,10 +134,10 @@ export def render_git_status []: nothing -> string {
     $status.commits_behind > 0
   )
 
-  let branch_name = (if $status.on_named_branch {
-    $status.branch_name
-  } else {
+  let branch_name = (if ($status | git detached) {
     ['(' $status.commit_hash '...)'] | str join
+  } else {
+    $status.branch_name
   })
 
   let branch_styled = (if $is_local_only {

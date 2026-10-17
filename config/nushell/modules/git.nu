@@ -1,9 +1,13 @@
 # Structured git data, exposed as `git <subcommand>` custom commands.
 #
 # These are deliberately named things git itself never uses (`repo-info`,
-# `changes`, `commits`, `branches`, `tags`, `stashes`, `remotes`) so they
-# extend `git` without shadowing any real subcommand — `git status`,
-# `git branch`, etc. still hit the external `git`.
+# `changes`, `commits`, `branches`, `tags`, `stashes`, `remotes`, `worktrees`,
+# `submodules`) so they extend `git` without shadowing any real subcommand —
+# `git status`, `git branch`, etc. still hit the external `git`.
+#
+# Everything is read from plumbing or documented machine-readable formats
+# (porcelain v2, `--format`, `-z`), never from human-oriented output, so it
+# stays stable across git versions, locales and user config.
 #
 # Every command takes an optional path as input and falls back to $env.PWD.
 # Outside a repo, record commands return null and table commands return [].
@@ -38,7 +42,15 @@ export type GitTags = table<name: string, hash: string, annotated: bool, date: d
 
 export type GitStashes = table<index: int, branch: string, message: string, date: datetime>
 
+# URLs are as configured; url.<base>.insteadOf rewrites are not applied.
 export type GitRemotes = table<name: string, fetch: string, push: string>
+
+# branch is null for a detached or bare worktree; hash is empty for bare.
+export type GitWorktrees = table<path: path, hash: string, branch: oneof<string, nothing>, current: bool, bare: bool, locked: bool, prunable: bool>
+
+# hash is the commit recorded in the superproject's index; branch is the
+# configured tracking branch, if any.
+export type GitSubmodules = table<name: string, path: string, url: string, branch: oneof<string, nothing>, hash: string, initialized: bool>
 
 # Field separator for --format strings (%x1f / %1f), never present in git data.
 const SEP = "\u{1f}"
@@ -74,39 +86,80 @@ def --wrapped git-records [repo: GitRepo, columns: list<string>, ...args: string
   git-in $repo ...$args | lines | split column $SEP ...$columns
 }
 
-# `# <key> <value>` header lines as a record, e.g. {branch.head: main, stash: '2'}.
+# NUL-terminated output split into its fields.
+def nul-fields []: string -> list<string> {
+  split row (char nul) | compact --empty
+}
+
+# `git config -z --get-regexp` as key/value rows; [] when nothing matches.
+def config-entries [repo: GitRepo, pattern: string, --file: path]: nothing -> table<key: string, value: string> {
+  let source = (if $file == null { [] } else { [--file $file] })
+  let result = (^git -C $repo.root config -z ...$source --get-regexp $pattern | complete)
+
+  # Exit code 1 means no matching keys.
+  if $result.exit_code == 1 {
+    return []
+  }
+  if $result.exit_code != 0 {
+    error make {msg: $"git config failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"}
+  }
+
+  # Each entry is `<key>\n<value>`; a valueless key has no newline.
+  $result.stdout | nul-fields | each {|entry|
+    let kv = ($entry | split row -n 2 (char nl))
+    {key: $kv.0, value: ($kv.1? | default '')}
+  }
+}
+
+# Porcelain v2 -z records. A rename's origPath is its own NUL field; it's
+# folded back into the record after a SEP.
+def status-records [repo: GitRepo]: nothing -> list<string> {
+  let fields = (git-in $repo status --porcelain=2 -z --branch --show-stash | nul-fields)
+
+  mut records: list<string> = []
+  mut i = 0
+  while $i < ($fields | length) {
+    let field = ($fields | get $i)
+    if ($field | str starts-with '2 ') {
+      $records ++= [$"($field)($SEP)($fields | get ($i + 1))"]
+      $i += 2
+    } else {
+      $records ++= [$field]
+      $i += 1
+    }
+  }
+  $records
+}
+
+# `# <key> <value>` header records as a record, e.g. {branch.head: main, stash: '2'}.
 def status-headers []: list<string> -> record {
   where ($it | str starts-with '# ') | parse '# {key} {value}' | transpose --header-row --as-record
 }
 
-# Porcelain v2 entry lines parsed into one row per file.
+# Porcelain v2 entry records parsed into one row per file.
 def status-changes []: list<string> -> GitChanges {
-  each {|line|
-    match ($line | str substring 0..0) {
+  each {|record|
+    match ($record | str substring 0..0) {
       # 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-      '1' => ($line
-        | parse -r '^1 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
+      '1' => ($record
+        | parse -r '(?s)^1 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
         | insert section ordinary | insert orig_path ''),
-      # 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><TAB><origPath>
-      '2' => ($line
-        | parse -r '^2 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<rest>.*)$'
+      # 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>SEP<origPath>
+      '2' => ($record
+        | parse -r '(?s)^2 (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<rest>.*)$'
         | each {|r|
-            let parts = ($r.rest | split row (char tab))
-            {section: rename, xy: $r.xy, path: ($parts | get 0), orig_path: ($parts | get 1)}
+            let parts = ($r.rest | split row $SEP)
+            {section: rename, xy: $r.xy, path: $parts.0, orig_path: $parts.1}
           }),
       # u <XY> <sub> <m1> <m2> <m3> <mW> <h1> <h2> <h3> <path>
-      'u' => ($line
-        | parse -r '^u (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
+      'u' => ($record
+        | parse -r '(?s)^u (?<xy>\S\S) \S+ \S+ \S+ \S+ \S+ \S+ \S+ \S+ (?<path>.*)$'
         | insert section unmerged | insert orig_path ''),
-      '?' => ($line | parse -r '^\? (?<path>.*)$' | insert xy '??' | insert section untracked | insert orig_path ''),
-      '!' => ($line | parse -r '^! (?<path>.*)$' | insert xy '!!' | insert section ignored | insert orig_path ''),
+      '?' => ($record | parse -r '(?s)^\? (?<path>.*)$' | insert xy '??' | insert section untracked | insert orig_path ''),
+      '!' => ($record | parse -r '(?s)^! (?<path>.*)$' | insert xy '!!' | insert section ignored | insert orig_path ''),
       _ => [],
     }
   } | flatten | select section xy path orig_path
-}
-
-def status-lines [repo: GitRepo]: nothing -> list<string> {
-  git-in $repo status --porcelain=2 --branch --show-stash | lines
 }
 
 # The multi-step operation in progress, detected from its state files in git_dir.
@@ -149,7 +202,7 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
     return null
   }
 
-  let status = (status-lines $repo)
+  let status = (status-records $repo)
   let headers = ($status | status-headers)
   let changes = ($status | status-changes)
 
@@ -196,12 +249,12 @@ export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
     return []
   }
 
-  status-lines $repo | status-changes
+  status-records $repo | status-changes
 }
 
 # Commit log, newest first.
 export def "git commits" [
-  ...revisions: string  # Revisions or ranges passed to git log (default: HEAD)
+  ...revisions: string  # Revisions or ranges to list (default: HEAD)
   --limit (-n): int = 20  # Maximum number of commits
 ]: [nothing -> GitLog, path -> GitLog] {
   let repo = ($in | repo-locate)
@@ -209,8 +262,10 @@ export def "git commits" [
     return []
   }
 
+  let revisions = (if ($revisions | is-empty) { [HEAD] } else { $revisions })
+
   (git-records $repo [hash author email date refs subject]
-    log $'--max-count=($limit)' '--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%D%x1f%s' ...$revisions)
+    rev-list --no-commit-header $'--max-count=($limit)' '--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%D%x1f%s' ...$revisions)
   | update date { into datetime }
   | update refs { split row ', ' | compact --empty }
 }
@@ -262,25 +317,28 @@ export def "git tags" []: [nothing -> GitTags, path -> GitTags] {
 # Stash entries, newest first.
 export def "git stashes" []: [nothing -> GitStashes, path -> GitStashes] {
   let repo = ($in | repo-locate)
-  if $repo == null {
+  if $repo == null or (git-in $repo for-each-ref refs/stash | is-empty) {
     return []
   }
 
-  git-records $repo [ref date subject] stash list '--format=%gd%x1f%cI%x1f%gs'
-  | each {|s|
-      # %gs is `WIP on <branch>: <hash> <subject>` or `On <branch>: <message>`.
-      let parsed = ($s.subject | parse -r '^(?<kind>WIP on|On) (?<branch>[^:]+): (?<message>.*)$' | get 0?)
+  # Walking the refs/stash reflog yields stash@{0}, stash@{1}, ... in order.
+  git-records $repo [date subject] rev-list --no-commit-header --walk-reflogs '--format=%cI%x1f%s' refs/stash
+  | enumerate
+  | each {|e|
+      # The stash commit subject is `WIP on <branch>: <hash> <subject>` or `On <branch>: <message>`.
+      let subject = $e.item.subject
+      let parsed = ($subject | parse -r '^(?<kind>WIP on|On) (?<branch>[^:]+): (?<message>.*)$' | get 0?)
       {
-        index: ($s.ref | parse -r '^stash@\{(?<n>\d+)\}$' | get n.0 | into int)
+        index: $e.index
         branch: ($parsed.branch? | default '')
         message: (if $parsed == null {
-          $s.subject
+          $subject
         } else if $parsed.kind == 'WIP on' {
           $parsed.message | str replace -r '^\S+ ' ''
         } else {
           $parsed.message
         })
-        date: ($s.date | into datetime)
+        date: ($e.item.date | into datetime)
       }
     }
 }
@@ -292,13 +350,84 @@ export def "git remotes" []: [nothing -> GitRemotes, path -> GitRemotes] {
     return []
   }
 
-  let entries = (git-in $repo remote -v | lines | parse -r '^(?<name>\S+)\t(?<url>\S+) \((?<kind>fetch|push)\)$')
+  # Remote names may contain dots, so match the key from both ends.
+  let urls = (config-entries $repo '^remote\..*\.(url|pushurl)$' | each {|e|
+    $e.key | parse -r '^remote\.(?<name>.+)\.(?<kind>url|pushurl)$' | first | insert url $e.value
+  })
 
-  $entries | where kind == fetch | each {|f|
+  $urls | get name | uniq | each {|name|
+    let remote = ($urls | where name == $name)
+    let fetch = ($remote | where kind == url | get url | append '' | first)
     {
-      name: $f.name
-      fetch: $f.url
-      push: ($entries | where name == $f.name and kind == push | get url | append $f.url | first)
+      name: $name
+      fetch: $fetch
+      push: ($remote | where kind == pushurl | get url | append $fetch | first)
+    }
+  }
+}
+
+# Worktrees attached to this repo, main worktree first.
+export def "git worktrees" []: [nothing -> GitWorktrees, path -> GitWorktrees] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  # Each worktree is a run of `<attr> [value]` fields ended by an empty field.
+  git-in $repo worktree list --porcelain -z
+  | split row (char nul)
+  | split list ''
+  | where ($it | is-not-empty)
+  | each {|fields|
+      let attrs = ($fields | each {|f|
+        let kv = ($f | split row -n 2 ' ')
+        {key: $kv.0, value: ($kv.1? | default '')}
+      } | transpose --header-row --as-record)
+
+      {
+        path: $attrs.worktree
+        hash: ($attrs.HEAD? | default '')
+        branch: (if 'branch' in $attrs { $attrs.branch | str replace -r '^refs/heads/' '' })
+        current: ($attrs.worktree == $repo.root)
+        bare: ('bare' in $attrs)
+        locked: ('locked' in $attrs)
+        prunable: ('prunable' in $attrs)
+      }
+    }
+}
+
+# Submodules declared in .gitmodules.
+export def "git submodules" []: [nothing -> GitSubmodules, path -> GitSubmodules] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  let gitmodules = ($repo.root | path join .gitmodules)
+  if not ($gitmodules | path exists) {
+    return []
+  }
+
+  # submodule.<name>.<field>; names may contain dots, fields can't.
+  let config = (config-entries $repo '^submodule\.' --file $gitmodules | each {|e|
+    $e.key | parse -r '^submodule\.(?<name>.+)\.(?<field>[^.]+)$' | first | insert value $e.value
+  })
+
+  let submodules = ($config | get name | uniq | each {|name|
+    let fields = ($config | where name == $name | select field value | transpose --header-row --as-record)
+    {name: $name, path: ($fields.path? | default ''), url: ($fields.url? | default ''), branch: $fields.branch?}
+  })
+
+  # Gitlinks (mode 160000) in the index carry each submodule's recorded commit.
+  let paths = ($submodules | get path | compact --empty)
+  let gitlinks = (git-in $repo ls-files -z --stage -- ...$paths
+    | nul-fields
+    | parse -r '(?s)^160000 (?<hash>\S+) \d+\t(?<path>.*)$')
+
+  $submodules | each {|s|
+    $s | merge {
+      hash: ($gitlinks | where path == $s.path | get hash | append '' | first)
+      initialized: ($repo.root | path join $s.path .git | path exists)
     }
   }
 }

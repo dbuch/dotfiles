@@ -15,7 +15,9 @@
 # root is the work tree's top level, git_dir its (per-worktree) git directory.
 export type GitRepo = record<root: path, git_dir: path>
 
-export type GitChanges = table<section: string, xy: string, path: string, orig_path: string>
+# staged/worktree are porcelain v2's X/Y status letters (M, T, A, D, R, C, U,
+# or `.` for unchanged); untracked and ignored entries use `?` and `!` for both.
+export type GitChanges = table<section: string, staged: string, worktree: string, path: string, orig_path: string>
 
 export type GitAheadBehind = record<ahead: int, behind: int>
 
@@ -159,7 +161,17 @@ def status-changes []: list<string> -> GitChanges {
       '!' => ($record | parse -r '(?s)^! (?<path>.*)$' | insert xy '!!' | insert section ignored | insert orig_path ''),
       _ => [],
     }
-  } | flatten | select section xy path orig_path
+  }
+  | flatten
+  | each {|c|
+      {
+        section: $c.section
+        staged: ($c.xy | str substring 0..0)
+        worktree: ($c.xy | str substring 1..1)
+        path: $c.path
+        orig_path: $c.orig_path
+      }
+    }
 }
 
 # The multi-step operation in progress, detected from its state files in git_dir.
@@ -208,10 +220,9 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
 
   let head: string = $headers.'branch.head'
 
-  # XY is <staged><worktree> for ordinary and renamed entries.
   let tracked = ($changes | where section in [ordinary rename])
-  let x = ($tracked | each { $in.xy | str substring 0..0 })
-  let y = ($tracked | each { $in.xy | str substring 1..1 })
+  let x = ($tracked | get staged)
+  let y = ($tracked | get worktree)
 
   {
     root: $repo.root

@@ -1,10 +1,15 @@
-# Git information helpers, exposed as `git <subcommand>` custom commands.
+# Structured git data, exposed as `git <subcommand>` custom commands.
 #
 # These are deliberately named things git itself never uses (`repo-info`,
-# `changes`) so they extend `git` without shadowing any real subcommand —
-# `git status`, `git commit`, etc. still hit the external `git`.
+# `changes`, `commits`, `branches`, `stashes`, `remotes`) so they extend `git`
+# without shadowing any real subcommand — `git status`, `git branch`, etc.
+# still hit the external `git`.
 #
 # Every command takes an optional path as input and falls back to $env.PWD.
+# Outside a repo, record commands return null and table commands return [].
+
+# root is the work tree's top level, git_dir its (per-worktree) git directory.
+export type GitRepo = record<root: path, git_dir: path>
 
 export type GitChanges = table<section: string, xy: string, path: string, orig_path: string>
 
@@ -18,40 +23,51 @@ export type GitStaging = record<added: int, modified: int, deleted: int>
 export type GitWorktree = record<untracked: int, modified: int, deleted: int>
 
 # branch is the branch name, or `(<short hash>...)` when HEAD is detached.
-# upstream is null for a local-only branch.
-export type GitInfo = record<branch: string, upstream: oneof<GitUpstream, nothing>, staged: GitStaging, worktree: GitWorktree, conflicts: int, stashes: int>
+# upstream is null for a local-only branch. operation is the multi-step
+# command in progress (rebase, am, merge, cherry-pick, revert, bisect) or null.
+export type GitInfo = record<root: path, branch: string, upstream: oneof<GitUpstream, nothing>, operation: oneof<string, nothing>, staged: GitStaging, worktree: GitWorktree, conflicts: int, stashes: int>
 
-# Expanded path when it's inside a git work tree, otherwise null.
-def "path is-git" []: [nothing -> oneof<path, nothing>, path -> oneof<path, nothing>] {
+# refs are the decorations, e.g. [HEAD -> main, origin/main, tag: v1].
+export type GitLog = table<hash: string, author: string, email: string, date: datetime, refs: list<string>, subject: string>
+
+export type GitBranches = table<name: string, current: bool, hash: string, upstream: oneof<GitUpstream, nothing>, date: datetime, subject: string>
+
+export type GitStashes = table<index: int, branch: string, message: string, date: datetime>
+
+export type GitRemotes = table<name: string, fetch: string, push: string>
+
+# Field separator for --format strings (%x1f / %1f), never present in git data.
+const SEP = "\u{1f}"
+
+# Repo paths for the given path, or null when it isn't inside a work tree.
+def repo-locate []: [nothing -> oneof<GitRepo, nothing>, path -> oneof<GitRepo, nothing>] {
   let path = ($in | default $env.PWD | path expand)
 
-  let result = (^git -C $path rev-parse --is-inside-work-tree | complete)
-  if $result.exit_code == 0 and ($result.stdout | str trim) == 'true' {
-    $path
-  } else {
-    null
+  let result = (^git -C $path rev-parse --show-toplevel --absolute-git-dir | complete)
+  if $result.exit_code != 0 {
+    return null
   }
+
+  let lines = ($result.stdout | lines)
+  {root: $lines.0, git_dir: $lines.1}
 }
 
-# One shell-out shared by every command below. null when the path isn't
-# inside a git repo, otherwise the raw `status --porcelain=2 --branch` lines.
-def "git status-raw" []: [nothing -> oneof<list<string>, nothing>, path -> oneof<list<string>, nothing>] {
-  let path = ($in | path is-git)
-  if $path == null { return null }
-
-  let result = (
-    ^git -C $path --no-optional-locks status --porcelain=2 --branch --show-stash
-    | complete
-  )
+# Run git at the repo root, erroring with git's stderr on failure.
+def --wrapped git-in [repo: GitRepo, ...args: string]: nothing -> string {
+  let result = (^git -C $repo.root --no-optional-locks ...$args | complete)
 
   if $result.exit_code != 0 {
     error make {
-      msg: $"git status failed \(exit code ($result.exit_code)\): ($result.stderr)"
-      label: {text: 'Unknown git status', span: (metadata $path).span}
+      msg: $"git ($args | first) failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"
     }
   }
 
-  $result.stdout | lines
+  $result.stdout
+}
+
+# Run git with a SEP-separated --format and split each line into columns.
+def --wrapped git-records [repo: GitRepo, columns: list<string>, ...args: string]: nothing -> table {
+  git-in $repo ...$args | lines | split column $SEP ...$columns
 }
 
 # `# <key> <value>` header lines as a record, e.g. {branch.head: main, stash: '2'}.
@@ -85,15 +101,51 @@ def status-changes []: list<string> -> GitChanges {
   } | flatten | select section xy path orig_path
 }
 
-# Structured branch/upstream/change-count summary of the repo.
-#
-# Returns null when the path isn't inside a git repo.
-export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneof<GitInfo, nothing>] {
-  let status = ($in | git status-raw)
-  if $status == null {
+def status-lines [repo: GitRepo]: nothing -> list<string> {
+  git-in $repo status --porcelain=2 --branch --show-stash | lines
+}
+
+# The multi-step operation in progress, detected from its state files in git_dir.
+def repo-operation []: GitRepo -> oneof<string, nothing> {
+  let git_dir = $in.git_dir
+
+  # Order matters: rebase-apply/applying (am) must win over plain rebase-apply.
+  [
+    [marker operation];
+    [rebase-merge rebase]
+    [rebase-apply/applying am]
+    [rebase-apply rebase]
+    [MERGE_HEAD merge]
+    [CHERRY_PICK_HEAD cherry-pick]
+    [REVERT_HEAD revert]
+    [BISECT_LOG bisect]
+  ]
+  | where ($git_dir | path join $it.marker | path exists)
+  | get operation
+  | get 0?
+}
+
+# `ahead N, behind M` / `gone` from %(upstream:track,nobracket).
+def track-commits []: string -> oneof<GitCommits, nothing> {
+  let track = $in
+  if $track == 'gone' {
     return null
   }
 
+  {
+    ahead: ($track | parse -r 'ahead (?<n>\d+)' | get n | append '0' | first | into int)
+    behind: ($track | parse -r 'behind (?<n>\d+)' | get n | append '0' | first | into int)
+  }
+}
+
+# Structured branch/upstream/change-count summary of the repo.
+export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneof<GitInfo, nothing>] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return null
+  }
+
+  let status = (status-lines $repo)
   let headers = ($status | status-headers)
   let changes = ($status | status-changes)
 
@@ -105,6 +157,7 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
   let y = ($tracked | each { $in.xy | str substring 1..1 })
 
   {
+    root: $repo.root
     branch: (if $head == '(detached)' { $"\(($headers.'branch.oid' | str substring 0..7)...\)" } else { $head })
     upstream: (if 'branch.upstream' in $headers {
       {
@@ -115,6 +168,7 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
         })
       }
     })
+    operation: ($repo | repo-operation)
     staged: {
       added: ($x | where $it == 'A' | length)
       modified: ($x | where $it in ['M', 'R'] | length)
@@ -132,13 +186,93 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
 
 # Per-file change list: section (ordinary/rename/unmerged/untracked/ignored),
 # the raw XY status code, and the path (renames also carry orig_path).
-#
-# Returns an empty table when the path isn't inside a git repo.
 export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
-  let status = ($in | git status-raw)
-  if $status == null {
+  let repo = ($in | repo-locate)
+  if $repo == null {
     return []
   }
 
-  $status | status-changes
+  status-lines $repo | status-changes
+}
+
+# Commit log, newest first.
+export def "git commits" [
+  ...revisions: string  # Revisions or ranges passed to git log (default: HEAD)
+  --limit (-n): int = 20  # Maximum number of commits
+]: [nothing -> GitLog, path -> GitLog] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  (git-records $repo [hash author email date refs subject]
+    log $'--max-count=($limit)' '--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%D%x1f%s' ...$revisions)
+  | update date { into datetime }
+  | update refs { split row ', ' | compact --empty }
+}
+
+# Local branches, most recently committed first.
+export def "git branches" []: [nothing -> GitBranches, path -> GitBranches] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  let format = '%(HEAD)%1f%(refname:short)%1f%(objectname)%1f%(upstream:short)%1f%(upstream:track,nobracket)%1f%(committerdate:iso-strict)%1f%(contents:subject)'
+
+  git-records $repo [head name hash upstream track date subject] for-each-ref refs/heads --sort=-committerdate $'--format=($format)'
+  | each {|b|
+      {
+        name: $b.name
+        current: ($b.head == '*')
+        hash: $b.hash
+        upstream: (if $b.upstream != '' { {name: $b.upstream, commits: ($b.track | track-commits)} })
+        date: ($b.date | into datetime)
+        subject: $b.subject
+      }
+    }
+}
+
+# Stash entries, newest first.
+export def "git stashes" []: [nothing -> GitStashes, path -> GitStashes] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  git-records $repo [ref date subject] stash list '--format=%gd%x1f%cI%x1f%gs'
+  | each {|s|
+      # %gs is `WIP on <branch>: <hash> <subject>` or `On <branch>: <message>`.
+      let parsed = ($s.subject | parse -r '^(?<kind>WIP on|On) (?<branch>[^:]+): (?<message>.*)$' | get 0?)
+      {
+        index: ($s.ref | parse -r '^stash@\{(?<n>\d+)\}$' | get n.0 | into int)
+        branch: ($parsed.branch? | default '')
+        message: (if $parsed == null {
+          $s.subject
+        } else if $parsed.kind == 'WIP on' {
+          $parsed.message | str replace -r '^\S+ ' ''
+        } else {
+          $parsed.message
+        })
+        date: ($s.date | into datetime)
+      }
+    }
+}
+
+# Configured remotes with their fetch and push URLs.
+export def "git remotes" []: [nothing -> GitRemotes, path -> GitRemotes] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  let entries = (git-in $repo remote -v | lines | parse -r '^(?<name>\S+)\t(?<url>\S+) \((?<kind>fetch|push)\)$')
+
+  $entries | where kind == fetch | each {|f|
+    {
+      name: $f.name
+      fetch: $f.url
+      push: ($entries | where name == $f.name and kind == push | get url | append $f.url | first)
+    }
+  }
 }

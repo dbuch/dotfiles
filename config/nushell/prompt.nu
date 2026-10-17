@@ -51,6 +51,7 @@ export def render_git_status []: nothing -> string {
 
   let segments = [
     ($info | branch-segment)
+    (if $info.operation != null { $info.operation | str uppercase | paint light_red })
     (if $has_staged { [$staged.added $staged.modified $staged.deleted] | counts-segment | paint green })
     (if $has_staged and $has_worktree { '|' | paint light_yellow })
     (if $has_worktree { [$worktree.untracked $worktree.modified $worktree.deleted] | counts-segment | paint red })

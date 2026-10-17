@@ -8,14 +8,18 @@
 
 export type GitChanges = table<section: string, xy: string, path: string, orig_path: string>
 
-export type GitCounts = record<added: int, modified: int, deleted: int>
+export type GitCommits = record<ahead: int, behind: int>
 
-# gone: the upstream is configured but no longer exists on the remote.
-export type GitUpstream = record<name: string, gone: bool, ahead: int, behind: int>
+# commits is null when the upstream is configured but gone from the remote.
+export type GitUpstream = record<name: string, commits: oneof<GitCommits, nothing>>
+
+export type GitStaging = record<added: int, modified: int, deleted: int>
+
+export type GitWorktree = record<untracked: int, modified: int, deleted: int>
 
 # branch is the branch name, or `(<short hash>...)` when HEAD is detached.
-# upstream is null for a local-only branch. worktree.added counts untracked files.
-export type GitInfo = record<branch: string, upstream: oneof<GitUpstream, nothing>, staged: GitCounts, worktree: GitCounts, conflicts: int, stashes: int>
+# upstream is null for a local-only branch.
+export type GitInfo = record<branch: string, upstream: oneof<GitUpstream, nothing>, staged: GitStaging, worktree: GitWorktree, conflicts: int, stashes: int>
 
 # Expanded path when it's inside a git work tree, otherwise null.
 def "path is-git" []: [nothing -> oneof<path, nothing>, path -> oneof<path, nothing>] {
@@ -81,16 +85,6 @@ def status-changes []: list<string> -> GitChanges {
   } | flatten | select section xy path orig_path
 }
 
-# Tally single-letter status codes (one side of XY).
-def count-codes []: list<string> -> GitCounts {
-  let codes = $in
-  {
-    added: ($codes | where $it == 'A' | length)
-    modified: ($codes | where $it in ['M', 'R'] | length)
-    deleted: ($codes | where $it == 'D' | length)
-  }
-}
-
 # Structured branch/upstream/change-count summary of the repo.
 #
 # Returns null when the path isn't inside a git repo.
@@ -104,17 +98,33 @@ export def "git repo-info" []: [nothing -> oneof<GitInfo, nothing>, path -> oneo
   let changes = ($status | status-changes)
 
   let head: string = $headers.'branch.head'
+
+  # XY is <staged><worktree> for ordinary and renamed entries.
   let tracked = ($changes | where section in [ordinary rename])
+  let x = ($tracked | each { $in.xy | str substring 0..0 })
+  let y = ($tracked | each { $in.xy | str substring 1..1 })
 
   {
     branch: (if $head == '(detached)' { $"\(($headers.'branch.oid' | str substring 0..7)...\)" } else { $head })
     upstream: (if 'branch.upstream' in $headers {
-      let ab = ($headers.'branch.ab'? | default '+0 -0' | split row ' ' | into int)
-      {name: $headers.'branch.upstream', gone: ('branch.ab' not-in $headers), ahead: $ab.0, behind: ($ab.1 | math abs)}
+      {
+        name: $headers.'branch.upstream'
+        commits: (if 'branch.ab' in $headers {
+          let ab = ($headers.'branch.ab' | split row ' ' | into int)
+          {ahead: $ab.0, behind: ($ab.1 | math abs)}
+        })
+      }
     })
-    staged: ($tracked | each { $in.xy | str substring 0..0 } | count-codes)
-    worktree: ($tracked | each { $in.xy | str substring 1..1 } | count-codes
-      | merge {added: ($changes | where section == untracked | length)})
+    staged: {
+      added: ($x | where $it == 'A' | length)
+      modified: ($x | where $it in ['M', 'R'] | length)
+      deleted: ($x | where $it == 'D' | length)
+    }
+    worktree: {
+      untracked: ($changes | where section == untracked | length)
+      modified: ($y | where $it in ['M', 'R'] | length)
+      deleted: ($y | where $it == 'D' | length)
+    }
     conflicts: ($changes | where section == unmerged | length)
     stashes: ($headers.stash? | default '0' | into int)
   }

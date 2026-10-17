@@ -1,4 +1,4 @@
-use git.nu ["git repo-info" GitInfo GitCounts]
+use git.nu ["git repo-info" GitInfo]
 
 def pwd-short [] {
   $env.PWD | str replace $nu.home-dir '~'
@@ -17,14 +17,15 @@ def branch-segment []: GitInfo -> string {
   if $upstream == null {
     return ($branch | paint light_cyan)
   }
-  if $upstream.gone {
+  let commits = $upstream.commits
+  if $commits == null {
     return ($'($branch) (char failed)' | paint light_cyan)
   }
 
-  let ahead = $'(char branch_ahead)($upstream.ahead)'
-  let behind = $'(char branch_behind)($upstream.behind)'
+  let ahead = $'(char branch_ahead)($commits.ahead)'
+  let behind = $'(char branch_behind)($commits.behind)'
 
-  match [($upstream.ahead > 0) ($upstream.behind > 0)] {
+  match [($commits.ahead > 0) ($commits.behind > 0)] {
     [false false] => ($'($branch) (char identical_to)' | paint light_cyan)
     [true false] => ($'($branch) ($ahead)' | paint light_green)
     [false true] => ($'($branch) ($behind)' | paint light_red)
@@ -32,12 +33,9 @@ def branch-segment []: GitInfo -> string {
   }
 }
 
-def counts-segment []: GitCounts -> string {
-  $'+($in.added) ~($in.modified) -($in.deleted)'
-}
-
-def total []: GitCounts -> int {
-  values | math sum
+# [added/untracked modified deleted] as `+a ~m -d`.
+def counts-segment []: list<int> -> string {
+  $'+($in.0) ~($in.1) -($in.2)'
 }
 
 export def render_git_status []: nothing -> string {
@@ -46,15 +44,16 @@ export def render_git_status []: nothing -> string {
     return ''
   }
 
-  let has_staged = ($info.staged | total) > 0
-  # Conflicts count as worktree changes so they get the red marker.
-  let has_worktree = ($info.worktree | total) + $info.conflicts > 0
+  let staged = $info.staged
+  let worktree = $info.worktree
+  let has_staged = ($staged | values | math sum) > 0
+  let has_worktree = ($worktree | values | math sum) > 0
 
   let segments = [
     ($info | branch-segment)
-    (if $has_staged { $info.staged | counts-segment | paint green })
+    (if $has_staged { [$staged.added $staged.modified $staged.deleted] | counts-segment | paint green })
     (if $has_staged and $has_worktree { '|' | paint light_yellow })
-    (if $has_worktree { $info.worktree | counts-segment | paint red })
+    (if $has_worktree { [$worktree.untracked $worktree.modified $worktree.deleted] | counts-segment | paint red })
     (if $info.conflicts > 0 { $'!($info.conflicts)' | paint red })
     (if $has_worktree { '!' | paint red } else if $has_staged { '~' | paint light_cyan })
     (if $info.stashes > 0 { $'$($info.stashes)' | paint light_yellow })

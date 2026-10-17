@@ -13,8 +13,9 @@
 #
 # Outside a repo, repo-info returns null and the table commands return [].
 
-# root is the work tree's top level, git_dir its (per-worktree) git directory.
-export type GitRepo = record<root: path, git_dir: path>
+# root is the work tree's top level, git_dir its (per-worktree) git directory,
+# object_format the hash algorithm (sha1 or sha256).
+export type GitRepo = record<root: path, git_dir: path, object_format: string>
 
 export type GitAheadBehind = record<ahead: int, behind: int>
 
@@ -50,17 +51,23 @@ const SEP = "\u{1f}"
 
 const NO_LINES = {added: 0, changed: 0, removed: 0}
 
+# The empty tree per object format: the diff base before the first commit.
+const EMPTY_TREE = {
+  sha1: '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+  sha256: '6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321'
+}
+
 # Repo paths for the given path, or null when it isn't inside a work tree.
 def repo-locate []: [nothing -> oneof<GitRepo, nothing>, path -> oneof<GitRepo, nothing>] {
   let path = ($in | default $env.PWD | path expand)
 
-  let result = (^git -C $path rev-parse --show-toplevel --absolute-git-dir | complete)
+  let result = (^git -C $path rev-parse --show-toplevel --absolute-git-dir --show-object-format | complete)
   if $result.exit_code != 0 {
     return null
   }
 
   let lines = ($result.stdout | lines)
-  {root: $lines.0, git_dir: $lines.1}
+  {root: $lines.0, git_dir: $lines.1, object_format: $lines.2}
 }
 
 # Run git at the repo root, erroring with git's stderr on failure.
@@ -81,14 +88,57 @@ def nul-fields []: string -> list<string> {
   split row (char nul) | compact --empty
 }
 
-# What to diff against: HEAD, or the empty tree before the first commit.
-def diff-base [repo: GitRepo]: nothing -> string {
-  let head = (^git -C $repo.root rev-parse --verify --quiet 'HEAD^{commit}' | complete)
-  if $head.exit_code == 0 {
-    $head.stdout | str trim
-  } else {
-    '' | ^git -C $repo.root hash-object -t tree --stdin | str trim
+# `diff-index -U0` of the worktree (or, with --cached in flags, the index)
+# against HEAD. Prefixes and path quoting are pinned so patch headers are
+# predictable regardless of user config.
+def diff-head [repo: GitRepo, flags: list<string>, paths: list<string> = []]: nothing -> string {
+  let diff = {|base|
+    (^git -C $repo.root --no-optional-locks -c core.quotePath=false
+      diff-index --src-prefix=a/ --dst-prefix=b/ --no-color -U0 ...$flags $base -- ...$paths
+      | complete)
   }
+
+  let result = (do $diff HEAD)
+  if $result.exit_code == 0 {
+    return $result.stdout
+  }
+
+  # Before the first commit there is no HEAD; diff against the empty tree.
+  let retry = (do $diff ($EMPTY_TREE | get $repo.object_format))
+  if $retry.exit_code != 0 {
+    error make {msg: $"git diff-index failed \(exit code ($result.exit_code)\): ($result.stderr | str trim)"}
+  }
+  $retry.stdout
+}
+
+# A path as a diff header prints it with core.quotePath=false: C-escaped and
+# wrapped in quotes only when it contains `"`, `\` or control characters.
+def c-quote [prefix: string]: string -> string {
+  let path = $"($prefix)($in)"
+  if $path !~ '["\\\x00-\x1f\x7f]' {
+    return $path
+  }
+
+  let escaped = ($path | split chars | each {|c|
+    match $c {
+      '"' => '\"'
+      '\' => '\\'
+      "\u{7}" => '\a'
+      "\u{8}" => '\b'
+      "\t" => '\t'
+      "\n" => '\n'
+      "\u{b}" => '\v'
+      "\u{c}" => '\f'
+      "\r" => '\r'
+      _ if $c =~ '[\x00-\x1f\x7f]' => {
+        let octal = ($c | into binary | into int | format number | get octal | str replace '0o' '')
+        $'\($octal | fill --alignment right --width 3 --character "0")'
+      }
+      _ => $c
+    }
+  } | str join)
+
+  $'"($escaped)"'
 }
 
 # Porcelain v2 -z records. A rename's origPath is its own NUL field; it's
@@ -169,41 +219,68 @@ def patch-hunks []: string -> GitHunks {
     }
 }
 
-def hunks-lines []: GitHunks -> GitLines {
-  let hunks = $in
-  if ($hunks | is-empty) {
-    return $NO_LINES
-  }
+# Line stats keyed by `diff --git` header, from a -U0 patch. One regex pass
+# picks out section and hunk headers in order; a type change prints two
+# sections (delete, then add) under one header, and their stats add up.
+def patch-header-lines []: string -> record {
+  let marks = ($in | parse -r '(?m)^(?:diff --git (?<header>.+)|@@ -\d+(?:,(?<rc>\d+))? \+\d+(?:,(?<ac>\d+))? @@)')
 
-  let changed = ($hunks | each { [$in.removed.count $in.added.count] | math min } | math sum)
-  {
-    added: (($hunks | each { $in.added.count } | math sum) - $changed)
-    changed: $changed
-    removed: (($hunks | each { $in.removed.count } | math sum) - $changed)
-  }
-}
-
-# Line stats for every tracked file differing from HEAD, as {path, lines} rows.
-def tracked-lines [repo: GitRepo]: nothing -> table<path: string, lines: GitLines> {
-  let base = (diff-base $repo)
-  let paths = (git-in $repo diff-index -M --name-only -z $base | nul-fields)
-  if ($paths | is-empty) {
-    return []
-  }
-
-  # One `diff --git` section per path, in the same order as --name-only, so
-  # paths never have to be parsed out of (possibly quoted) patch headers.
-  let sections = (git-in $repo diff-index -M -p -U0 --no-color $base | split row -r '(?m)^diff --git ' | skip 1)
-
-  if ($sections | length) == ($paths | length) {
-    $paths | zip $sections | each {|p| {path: $p.0, lines: ($p.1 | patch-hunks | hunks-lines)} }
-  } else {
-    # A type change (e.g. file -> symlink) splits into two sections; fall
-    # back to diffing file by file.
-    $paths | each {|path|
-      {path: $path, lines: (git-in $repo diff-index -M -p -U0 --no-color $base -- $path | patch-hunks | hunks-lines)}
+  mut stats = []
+  mut header = ''
+  mut added = 0
+  mut changed = 0
+  mut removed = 0
+  for mark in $marks {
+    # Groups outside the matched alternative come back null.
+    if ($mark.header | is-empty) {
+      # An omitted count means 1.
+      let r = ($mark.rc | default -e '1' | into int)
+      let a = ($mark.ac | default -e '1' | into int)
+      let c = ([$r $a] | math min)
+      $added += $a - $c
+      $changed += $c
+      $removed += $r - $c
+    } else if $mark.header != $header {
+      if $header != '' {
+        $stats ++= [[$header {added: $added, changed: $changed, removed: $removed}]]
+      }
+      $header = $mark.header
+      $added = 0
+      $changed = 0
+      $removed = 0
     }
   }
+  if $header != '' {
+    $stats ++= [[$header {added: $added, changed: $changed, removed: $removed}]]
+  }
+
+  $stats | into record
+}
+
+# Line stats keyed by path from `--patch-with-raw -z` output: NUL-separated
+# raw entries (exact paths), an empty field, then the patch. Each entry finds
+# its stats by the header git prints for it, so entries without a section
+# (stat-only changes) simply get no lines.
+def raw-patch-lines []: string -> record {
+  let parts = ($in | split row -n 2 "\u{0}\u{0}")
+  let raw = ($parts.0 | nul-fields)
+  let by_header = ($parts.1? | default '' | patch-header-lines)
+
+  # `:<modes> <hashes> <status>` then the path, or old and new path for R/C.
+  mut by_path = []
+  mut i = 0
+  while $i < ($raw | length) {
+    let status = ($raw | get $i | split row ' ' | last | str substring 0..0)
+    let paths = (if $status in [R C] { $raw | slice ($i + 1)..($i + 2) } else { [($raw | get ($i + 1))] })
+    let old = $paths.0
+    let new = ($paths | last)
+
+    let header = $"($old | c-quote 'a/') ($new | c-quote 'b/')"
+    $by_path ++= [[$new ($by_header | get --optional ([$header] | into cell-path) | default $NO_LINES)]]
+    $i += 1 + ($paths | length)
+  }
+
+  $by_path | into record
 }
 
 # Every line of an untracked text file counts as added. Like git, a NUL in
@@ -294,18 +371,19 @@ export def "git changes" []: [nothing -> GitChanges, path -> GitChanges] {
     return []
   }
 
-  let entries = (status-records $repo | status-entries)
-  if ($entries | is-empty) {
-    return []
-  }
-
-  let tracked = (tracked-lines $repo)
+  # status and the diff don't depend on each other; run them concurrently.
+  let results = ([
+    { status-records $repo | status-entries }
+    { diff-head $repo [-M --patch-with-raw -z] | raw-patch-lines }
+  ] | par-each --keep-order {|job| do $job })
+  let entries = $results.0
+  let tracked = $results.1
 
   $entries | each {|e|
     let lines = (match $e.section {
       untracked => (untracked-lines $repo $e.path)
       ignored => $NO_LINES
-      _ => ($tracked | where path == $e.path | get lines | append $NO_LINES | first)
+      _ => ($tracked | get --optional ([$e.path] | into cell-path) | default $NO_LINES)
     })
     $e | insert lines $lines
   }
@@ -324,5 +402,5 @@ export def "git hunks" [
   }
 
   let cached = (if $staged { [--cached] } else { [] })
-  git-in $repo diff-index -p -U0 --no-color ...$cached (diff-base $repo) -- $file | patch-hunks
+  diff-head $repo [-p ...$cached] [$file] | patch-hunks
 }

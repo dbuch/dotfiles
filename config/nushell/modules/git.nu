@@ -1,9 +1,9 @@
 # Structured git data, exposed as `git <subcommand>` custom commands.
 #
 # These are deliberately named things git itself never uses (`repo-info`,
-# `changes`, `commits`, `branches`, `stashes`, `remotes`) so they extend `git`
-# without shadowing any real subcommand — `git status`, `git branch`, etc.
-# still hit the external `git`.
+# `changes`, `commits`, `branches`, `tags`, `stashes`, `remotes`) so they
+# extend `git` without shadowing any real subcommand — `git status`,
+# `git branch`, etc. still hit the external `git`.
 #
 # Every command takes an optional path as input and falls back to $env.PWD.
 # Outside a repo, record commands return null and table commands return [].
@@ -13,10 +13,10 @@ export type GitRepo = record<root: path, git_dir: path>
 
 export type GitChanges = table<section: string, xy: string, path: string, orig_path: string>
 
-export type GitCommits = record<ahead: int, behind: int>
+export type GitAheadBehind = record<ahead: int, behind: int>
 
 # commits is null when the upstream is configured but gone from the remote.
-export type GitUpstream = record<name: string, commits: oneof<GitCommits, nothing>>
+export type GitUpstream = record<name: string, commits: oneof<GitAheadBehind, nothing>>
 
 export type GitStaging = record<added: int, modified: int, deleted: int>
 
@@ -31,6 +31,10 @@ export type GitInfo = record<root: path, branch: string, upstream: oneof<GitUpst
 export type GitLog = table<hash: string, author: string, email: string, date: datetime, refs: list<string>, subject: string>
 
 export type GitBranches = table<name: string, current: bool, hash: string, upstream: oneof<GitUpstream, nothing>, date: datetime, subject: string>
+
+# hash is the tagged commit (peeled for annotated tags). date and subject come
+# from the tag object when annotated, otherwise from the commit.
+export type GitTags = table<name: string, hash: string, annotated: bool, date: datetime, subject: string>
 
 export type GitStashes = table<index: int, branch: string, message: string, date: datetime>
 
@@ -126,7 +130,7 @@ def repo-operation []: GitRepo -> oneof<string, nothing> {
 }
 
 # `ahead N, behind M` / `gone` from %(upstream:track,nobracket).
-def track-commits []: string -> oneof<GitCommits, nothing> {
+def track-ahead-behind []: string -> oneof<GitAheadBehind, nothing> {
   let track = $in
   if $track == 'gone' {
     return null
@@ -226,9 +230,31 @@ export def "git branches" []: [nothing -> GitBranches, path -> GitBranches] {
         name: $b.name
         current: ($b.head == '*')
         hash: $b.hash
-        upstream: (if $b.upstream != '' { {name: $b.upstream, commits: ($b.track | track-commits)} })
+        upstream: (if $b.upstream != '' { {name: $b.upstream, commits: ($b.track | track-ahead-behind)} })
         date: ($b.date | into datetime)
         subject: $b.subject
+      }
+    }
+}
+
+# Tags, most recently created first.
+export def "git tags" []: [nothing -> GitTags, path -> GitTags] {
+  let repo = ($in | repo-locate)
+  if $repo == null {
+    return []
+  }
+
+  # %(*objectname) is the peeled commit, empty for lightweight tags.
+  let format = '%(refname:short)%1f%(objecttype)%1f%(objectname)%1f%(*objectname)%1f%(creatordate:iso-strict)%1f%(contents:subject)'
+
+  git-records $repo [name type hash peeled date subject] for-each-ref refs/tags --sort=-creatordate $'--format=($format)'
+  | each {|t|
+      {
+        name: $t.name
+        hash: ($t.peeled | default -e $t.hash)
+        annotated: ($t.type == 'tag')
+        date: ($t.date | into datetime)
+        subject: $t.subject
       }
     }
 }

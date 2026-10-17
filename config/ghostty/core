@@ -1,0 +1,24 @@
+theme = dark:Monokai Pro Spectrum,light:Monokai Pro Light
+
+linux-cgroup = always
+
+window-padding-x = 0
+window-padding-y = 0
+maximize = true
+command = nu
+
+font-size=13
+
+#alpha-blending = "native"
+#alpha-blending = "linear"
+#alpha-blending = "linear-corrected"
+
+cursor-click-to-move = true
+
+unfocused-split-opacity = 1
+
+shell-integration = detect
+
+notify-on-command-finish = unfocused
+notify-on-command-finish-action = no-bell,notify
+notify-on-command-finish-after = 30s

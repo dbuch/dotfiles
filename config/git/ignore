@@ -77,3 +77,6 @@ tags
 tags.*
 TAGS
 TAGS.*
+
+## Agents
+.claude

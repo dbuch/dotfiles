@@ -3,6 +3,7 @@
 return {
   {
     'mfussenegger/nvim-dap',
+    lazy = false,
     keys = {
       { '<leader>d', '', desc = '+debug', mode = { 'n', 'v' } },
       {
@@ -124,7 +125,7 @@ return {
         opts = {},
       },
     },
-    config = function(plugin, opts)
+    config = function(_plugin, _opts)
       vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
 
       vim.fn.sign_define(
@@ -153,6 +154,7 @@ return {
   },
   {
     'igorlfs/nvim-dap-view',
+    lazy = false,
     cmd = {
       -- Opens both nvim-dap-view windows1: views + console.
       'DapViewOpen',

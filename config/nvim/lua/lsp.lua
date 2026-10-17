@@ -18,7 +18,7 @@ end
 
 on_attach(function(_client, _bufnr)
   if safe_require('lsp_utils') then
-    -- Detach on first succes require
+    -- Detach on first success require
     return true
   end
 end, attach_augroup)
@@ -37,6 +37,7 @@ require('dbuch.diagnostic').config()
 local enabled_lsps = {
   -- Shell
   'nushell',
+  'nu_lint',
   'bashls',
 
   -- Data/Exchangeable formats ls
@@ -57,7 +58,7 @@ local enabled_lsps = {
   'ruff',
   'zls',
 
-  'roslyn',
+  -- 'roslyn',
   'wgsl',
 
   -- Web Programming

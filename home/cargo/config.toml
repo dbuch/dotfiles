@@ -11,3 +11,7 @@
 #   "-C",
 #   "split-debuginfo=unpacked",
 # ]
+
+[profile.profiling]
+inherits = "release"
+debug = true

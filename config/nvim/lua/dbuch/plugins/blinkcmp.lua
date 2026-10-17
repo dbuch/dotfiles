@@ -10,19 +10,6 @@ return {
     -- build = 'cargo build --release --target-dir=target',
     dependencies = {
       'nvim-mini/mini.icons',
-      {
-        'supermaven-inc/supermaven-nvim',
-        dev = true,
-        opts = {
-          disable_inline_completion = true, -- disables inline completion for use with cmp
-          disable_keymaps = true, -- disables built in keymaps for more manual control
-          register_cmp = false,
-          ignore_filetypes = { 'bigfile', 'snacks_input', 'snacks_notif' },
-        },
-      },
-      {
-        'huijiro/blink-cmp-supermaven',
-      },
     },
     opts_extend = {
       'sources.completion.enabled_providers',
@@ -123,7 +110,8 @@ return {
 
       sources = {
         --default = { 'lazydev', 'lsp', 'path', 'snippets', 'buffer', 'codecompanion', 'markdown' },
-        default = { 'supermaven', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        -- default = { 'supermaven', 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
+        default = { 'lsp', 'path', 'snippets', 'buffer', 'markdown' },
 
         per_filetype = {
           lua = { inherit_defaults = true, 'lazydev' },
@@ -137,11 +125,11 @@ return {
               end,
             },
           },
-          supermaven = {
-            name = 'supermaven',
-            module = 'blink-cmp-supermaven',
-            async = true,
-          },
+          -- supermaven = {
+          --   name = 'supermaven',
+          --   module = 'blink-cmp-supermaven',
+          --   async = true,
+          -- },
           -- codecompanion = {
           --   enabled = true,
           --   module = 'codecompanion.providers.completion.blink',

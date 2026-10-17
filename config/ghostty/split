@@ -1,0 +1,35 @@
+keybind = alt+w=activate_key_table_once:Split
+
+keybind = Split/
+keybind = Resize/
+
+keybind = Split/k=goto_split:up
+keybind = Split/n>k=new_split:up
+
+keybind = Split/j=goto_split:down
+keybind = Split/n>j=new_split:down
+
+keybind = Split/h=goto_split:left
+keybind = Split/n>h=new_split:left
+
+keybind = Split/l=goto_split:right
+keybind = Split/n>l=new_split:right
+keybind = Split/r=activate_key_table:Resize
+
+keybind = Split/f=toggle_split_zoom
+keybind = Split/q=close_surface
+
+
+keybind = Resize/k=resize_split:up,10
+keybind = Resize/j=resize_split:down,10
+keybind = Resize/h=resize_split:left,10
+keybind = Resize/l=resize_split:right,10
+keybind = Resize/e=equalize_splits
+
+keybind = Split/h=goto_split:left
+keybind = Split/n>h=new_split:left
+
+keybind = Resize/escape=deactivate_key_table
+
+keybind = Split/catch_all=ignore
+keybind = Resize/catch_all=ignore

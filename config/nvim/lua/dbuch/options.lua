@@ -65,7 +65,7 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.splitkeep = 'screen'
 
--- formating
+-- formatting
 vim.g.autoformat = true
 vim.opt.formatoptions:append({
   r = true, -- Automatically insert comment leader after <Enter> in Insert mode.
@@ -120,3 +120,11 @@ vim.opt.shellcmdflag = '--stdin --no-newline -c'
 vim.opt.shellxescape = ''
 vim.opt.shellxquote = ''
 vim.opt.shellquote = ''
+
+local M = {}
+
+function M.toggle() end
+function M.enable() end
+function M.disable() end
+
+return M

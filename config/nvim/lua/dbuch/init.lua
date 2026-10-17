@@ -74,3 +74,6 @@ safe_require('dbuch.macros')
 safe_require('lsp')
 
 safe_require('dbuch.root').setup()
+
+vim.cmd('packadd nvim.undotree')
+vim.cmd('packadd nvim.difftool')

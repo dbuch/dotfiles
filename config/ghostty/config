@@ -1,12 +1,2 @@
-theme = dark:Monokai Pro Spectrum,light:Monokai Pro Light
-
-linux-cgroup = always
-
-# gtk-titlebar-hide-when-maximized = true
-
-window-padding-x = 0
-window-padding-y = 0
-maximize = true
-command = nu
-
-unfocused-split-opacity=1.0
+config-file = core
+config-file = keybindings

@@ -3,11 +3,18 @@
 return {
   {
     'seblyng/roslyn.nvim',
-    lazy = false,
+    ft = 'cs',
     ---@module 'roslyn.config'
     ---@type RoslynNvimConfig
     opts = {
-      -- your configuration comes here; leave empty for default settings
+      extensions = {
+        razor = {
+          enabled = true,
+          config = function()
+            return { path = nil }
+          end,
+        },
+      },
     },
   },
 }

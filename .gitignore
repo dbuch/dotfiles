@@ -1,4 +1,5 @@
 history.sqlite3*
+history.txt
 dot.log
 *.spl
 auth/

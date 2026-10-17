@@ -1,18 +1,5 @@
-#!/usr/bin/env nu
-
-export-env {
-  $env.ENV_CONVERSIONS = {
-      "PATH": {
-          from_string: { |s| $s | split row (char esep) | path expand --no-symlink }
-          to_string: { |v| $v | path expand --no-symlink | str join (char esep) }
-      }
-      "Path": {
-          from_string: { |s| $s | split row (char esep) | path expand --no-symlink }
-          to_string: { |v| $v | path expand --no-symlink | str join (char esep) }
-      }
-  }
-
-}
+# Nushell converts the OS PATH/Path variable to/from a list automatically
+# before env.nu loads, so no manual ENV_CONVERSIONS entry is needed for it.
 
 # Directory | linux           | mac                            |  windows
 # Config    | ~/.config/      | ~/Library/Application/         | %APPDATA%
@@ -21,68 +8,75 @@ export-env {
 # Runtime   | /run/user/$UID  | /var/folders                   | %TEMP%
 
 export-env { load-env {
-  XDG_DATA_HOME: ($env.HOME | path join ".local" "share")
-  XDG_CONFIG_HOME: ($env.HOME | path join ".config")
-  XDG_STATE_HOME: ($env.HOME | path join ".local" "state")
-  XDG_CACHE_HOME: ($env.HOME | path join ".cache")
-}}
+  XDG_DATA_HOME: ($env.HOME | path join .local share)
+  XDG_CONFIG_HOME: ($env.HOME | path join .config)
+  XDG_STATE_HOME: ($env.HOME | path join .local state)
+  XDG_CACHE_HOME: ($env.HOME | path join .cache)
+} }
 
 export-env { load-env {
-  BROWSER: "firefox"
+  BROWSER: firefox
   DEBUGINFOD_URLS: "https://debuginfod.archlinux.org/"
   MOZ_ENABLE_WAYLAND: 1
-  EDITOR: "nvim"
-  VISUAL: "nvim"
-  PAGER: "less"
-  SHELL: "nu"
-  HOSTNAME:  (hostname | split row '.' | first | str trim)
+  EDITOR: nvim
+  VISUAL: nvim
+  PAGER: less
+  HOSTNAME:  (sys host | get hostname)
   SHOW_USER: true
   SSH_AUTH_SOCK: $"($env.XDG_RUNTIME_DIR)/ssh-agent.socket"
   SSH_AGENT_TIMEOUT: 300
-  SSH_KEYS_HOME: ($env.HOME | path join ".ssh" "keys")
+  SSH_KEYS_HOME: ($env.HOME | path join .ssh keys)
   DIFFPROG: "nvim -d"
-}}
+} }
 
 export-env { load-env {
-  SQLITE_HISTORY: ($env.XDG_CACHE_HOME | path join "sqlite_history")
-}}
+  SQLITE_HISTORY: ($env.XDG_CACHE_HOME | path join sqlite_history)
+} }
 
 export-env { load-env {
-  NUPM_CACHE: ($env.XDG_CACHE_HOME | path join "nupm")
-  NUPM_HOME: ($env.XDG_DATA_HOME | path join "nupm")
-}}
+  FLM_CONFIG_PATH: $"($env.XDG_CONFIG_HOME)/.config/flm/model_list.json"
+  FLM_XCLBIN_PATH: $"($env.XDG_CONFIG_HOME)/.config/flm"
+} }
+
+export-env { load-env {
+  NUPM_CACHE: ($env.XDG_CACHE_HOME | path join nupm)
+  NUPM_HOME: ($env.XDG_DATA_HOME | path join nupm)
+} }
 
 $env.TERMINFO_DIRS = (
   [
-    ($env.XDG_DATA_HOME | path join 'terminfo')
-    "/usr/share/terminfo"
-  ] | str join ':'
+    ($env.XDG_DATA_HOME | path join terminfo)
+    /usr/share/terminfo
+  ] | str join :
 )
 
-let $path_list = $env.PATH | split row (char esep)
-if ($path_list | any {|$p| ($p == ($env.HOME | path join ".cargo" "bin"))}) == false {
-  $env.PATH = ($env.PATH | split row (char esep) | prepend '~/.cargo/bin/')
+# Compare against trailing-slash-normalized entries so an existing
+# "/home/user/.local/bin/" doesn't defeat the "already present?" check below.
+let existing_paths = ($env.PATH | split row (char esep) | each {|p| $p | str trim --right --char '/' })
+
+for dir in [
+  ($env.HOME | path join .cargo bin)
+  ($env.HOME | path join .local bin)
+  ($env.HOME | path join .local bin bin)
+  ($env.HOME | path join .dotnet tools)
+] {
+  if $dir not-in $existing_paths {
+    $env.PATH = ($env.PATH | split row (char esep) | prepend $dir)
+  }
 }
 
-if ($path_list | any {|$p| ($p == ($env.HOME | path join ".local" "bin"))}) == false {
-  $env.PATH = ($env.PATH | split row (char esep) | prepend '~/.local/bin/')
+let opencode_bin = ($env.HOME | path join .opencode bin)
+if $opencode_bin not-in $existing_paths {
+  $env.PATH = ($env.PATH | split row (char esep) | append $opencode_bin)
 }
 
-if ($path_list | any {|$p| ($p == ($env.HOME | path join ".dotnet" "tools"))}) == false {
-  $env.PATH = ($env.PATH | split row (char esep) | prepend '~/.dotnet/tools/')
-}
-
-$env.NU_LIB_DIRS = [
-    ($env.NUPM_HOME | path join "modules")
+load-env { NU_LIB_DIRS: [
+    ($env.NUPM_HOME | path join modules)
     ($nu.default-config-dir)
-    ($nu.default-config-dir | path join "scripts")
-    ($nu.default-config-dir | path join "modules")
-    ($nu.default-config-dir | path join "overlays")
-]
-
-$env.NU_PLUGIN_DIRS = [
-    ($env.NUPM_HOME | path join "modules")
-    ($nu.data-dir | path join 'plugins' | path join (version).version)
-    ($nu.config-path | path dirname | path join 'plugins')]
-
-$env.SHELL = $nu.current-exe
+    ($nu.default-config-dir | path join scripts)
+    ($nu.default-config-dir | path join modules)
+    ($nu.default-config-dir | path join overlays)
+], NU_PLUGIN_DIRS: [
+    ($env.NUPM_HOME | path join modules)
+    ($nu.data-dir | path join plugins | path join (version).version)
+    ($nu.config-path | path dirname | path join plugins)], SHELL: $nu.current-exe }

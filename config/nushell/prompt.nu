@@ -1,217 +1,4 @@
-export-env {
-  $env.GIT.TOPLEVEL = ""
-}
-
-def nope [] {
-  each { |it| $it == false }
-}
-
-def repo_structured [] {
-  if ($env.GIT.TOPLEVEL | is-empty) {
-    return
-  }
-
-  let in_git_repo = true
-
-  let status = (if $in_git_repo {
-    git --no-optional-locks status --porcelain=2 --branch | lines
-  } else {
-    []
-  })
-
-  let on_named_branch = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '# branch.head')
-    | first
-    | str contains '(detached)'
-    | nope
-  } else {
-    false
-  })
-
-  let branch_name = (if $on_named_branch {
-    $status
-    | where ($it | str starts-with '# branch.head')
-    | split column ' ' col1 col2 branch
-    | get branch
-    | first
-  } else {
-    ''
-  })
-
-  let commit_hash = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '# branch.oid')
-    | split column ' ' col1 col2 full_hash
-    | get full_hash
-    | first
-    | str substring 0..7
-  } else {
-    ''
-  })
-
-  let tracking_upstream_branch = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '# branch.upstream')
-    | str join
-    | is-empty
-    | nope
-  } else {
-    false
-  })
-
-  let upstream_exists_on_remote = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '# branch.ab')
-    | str join
-    | is-empty
-    | nope
-  } else {
-    false
-  })
-
-  let ahead_behind_table = (if $upstream_exists_on_remote {
-    $status
-    | where ($it | str starts-with '# branch.ab')
-    | split column ' ' col1 col2 ahead behind
-  } else {
-    [[]]
-  })
-
-  let commits_ahead = (if $upstream_exists_on_remote {
-    $ahead_behind_table
-    | get ahead
-    | first
-    | into int
-  } else {
-    0
-  })
-
-  let commits_behind = (if $upstream_exists_on_remote {
-    $ahead_behind_table
-    | get behind
-    | first
-    | into int
-    | math abs
-  } else {
-    0
-  })
-
-  let has_staging_or_worktree_changes = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '1') or ($it | str starts-with '2')
-    | str join
-    | is-empty
-    | nope
-  } else {
-    false
-  })
-
-  let has_untracked_files = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with '?')
-    | str join
-    | is-empty
-    | nope
-  } else {
-    false
-  })
-
-  let has_unresolved_merge_conflicts = (if $in_git_repo {
-    $status
-    | where ($it | str starts-with 'u')
-    | str join
-    | is-empty
-    | nope
-  } else {
-    false
-  })
-
-  let staging_worktree_table = (if $has_staging_or_worktree_changes {
-    $status
-    | where ($it | str starts-with '1') or ($it | str starts-with '2')
-    | split column ' '
-    | get column2
-    | split column '' staging worktree --collapse-empty
-  } else {
-    [[]]
-  })
-
-  let staging_added_count = (if $has_staging_or_worktree_changes {
-    $staging_worktree_table
-    | where staging == 'A'
-    | length
-  } else {
-    0
-  })
-
-  let staging_modified_count = (if $has_staging_or_worktree_changes {
-    $staging_worktree_table
-    | where staging in ['M', 'R']
-    | length
-  } else {
-    0
-  })
-
-  let staging_deleted_count = (if $has_staging_or_worktree_changes {
-    $staging_worktree_table
-    | where staging == 'D'
-    | length
-  } else {
-    0
-  })
-
-  let untracked_count = (if $has_untracked_files {
-    $status
-    | where ($it | str starts-with '?')
-    | length
-  } else {
-    0
-  })
-
-  let worktree_modified_count = (if $has_staging_or_worktree_changes {
-    $staging_worktree_table
-    | where worktree in ['M', 'R']
-    | length
-  } else {
-    0
-  })
-
-  let worktree_deleted_count = (if $has_staging_or_worktree_changes {
-    $staging_worktree_table
-    | where worktree == 'D'
-    | length
-  } else {
-    0
-  })
-
-  let merge_conflict_count = (if $has_unresolved_merge_conflicts {
-    $status
-    | where ($it | str starts-with 'u')
-    | length
-  } else {
-    0
-  })
-
-  {
-    is_git: $in_git_repo
-    on_named_branch: $on_named_branch,
-    branch_name: $branch_name,
-    commit_hash: $commit_hash,
-    tracking_upstream_branch: $tracking_upstream_branch,
-    upstream_exists_on_remote: $upstream_exists_on_remote,
-    commits_ahead: $commits_ahead,
-    commits_behind: $commits_behind,
-    staging_added_count: $staging_added_count,
-    staging_modified_count: $staging_modified_count,
-    staging_deleted_count: $staging_deleted_count,
-    untracked_count: $untracked_count,
-    worktree_modified_count: $worktree_modified_count,
-    worktree_deleted_count: $worktree_deleted_count,
-    merge_conflict_count: $merge_conflict_count
-  }
-}
-
+use git.nu "git repo-info"
 
 def pwd-short [] {
   $env.PWD | str replace $nu.home-dir '~'
@@ -304,12 +91,18 @@ def unresolved-conflicts [
   $'!($conflicts)' | red
 }
 
-def repo-styled [] {
-  if ($env.GIT.TOPLEVEL | is-empty) {
+def stashed-changes [
+  count: int
+] {
+  $'$($count)' | bright-yellow
+}
+
+export def render_git_status []: nothing -> string {
+  let status = (git repo-info)
+  if not $status.is_repo {
     return ''
   }
 
-  let status = (repo_structured)
   let is_local_only = ($status.tracking_upstream_branch != true)
 
   let upstream_deleted = (
@@ -341,34 +134,26 @@ def repo-styled [] {
     $status.commits_behind > 0
   )
 
-  let branch_name = (if $status.is_git {
-    (if $status.on_named_branch {
-      $status.branch_name
-    } else {
-      ['(' $status.commit_hash '...)'] | str join
-    })
+  let branch_name = (if $status.on_named_branch {
+    $status.branch_name
   } else {
-    ''
+    ['(' $status.commit_hash '...)'] | str join
   })
 
-  let branch_styled = (if $status.is_git {
-    (if $is_local_only {
-      (branch-local-only $branch_name)
-    } else if $is_up_to_date {
-      (branch-up-to-date $branch_name)
-    } else if $is_ahead {
-      (branch-ahead $branch_name $status.commits_ahead)
-    } else if $is_behind {
-      (branch-behind $branch_name $status.commits_behind)
-    } else if $is_ahead_and_behind {
-      (branch-ahead-and-behind $branch_name $status.commits_ahead $status.commits_behind)
-    } else if $upstream_deleted {
-      (branch-upstream-deleted $branch_name)
-    } else {
-      $branch_name
-    })
+  let branch_styled = (if $is_local_only {
+    (branch-local-only $branch_name)
+  } else if $is_up_to_date {
+    (branch-up-to-date $branch_name)
+  } else if $is_ahead {
+    (branch-ahead $branch_name $status.commits_ahead)
+  } else if $is_behind {
+    (branch-behind $branch_name $status.commits_behind)
+  } else if $is_ahead_and_behind {
+    (branch-ahead-and-behind $branch_name $status.commits_ahead $status.commits_behind)
+  } else if $upstream_deleted {
+    (branch-upstream-deleted $branch_name)
   } else {
-    ''
+    $branch_name
   })
 
   let has_staging_changes = (
@@ -414,30 +199,28 @@ def repo-styled [] {
     $'($staging_summary) ($delimiter) ($worktree_summary) ($merge_conflict_summary)' | str trim
   )
 
-  let local_indicator = (if $status.is_git {
-    (if $has_worktree_changes {
-      ('!' | red)
-    } else if $has_staging_changes {
-      ('~' | bright-cyan)
-    } else {
-      ''
-    })
+  let local_indicator = (if $has_worktree_changes {
+    ('!' | red)
+  } else if $has_staging_changes {
+    ('~' | bright-cyan)
+  } else {
+    ''
+  })
+
+  let stash_summary = (if $status.stash_count > 0 {
+    (stashed-changes $status.stash_count)
   } else {
     ''
   })
 
   let repo_summary = (
-    $'($branch_styled) ($local_summary) ($local_indicator)' | str trim
+    $'($branch_styled) ($local_summary) ($local_indicator) ($stash_summary)' | str trim
   )
 
   let left_bracket = ('[' | bright-yellow)
   let right_bracket = (']' | bright-yellow)
 
-  (if $status.is_git {
-    $'($left_bracket)($repo_summary)($right_bracket)'
-  } else {
-    ''
-  })
+  $'($left_bracket)($repo_summary)($right_bracket)'
 }
 
 export def create_left_prompt [] {
@@ -448,23 +231,4 @@ export def create_left_prompt [] {
     }
 
     $path_segment | str replace $nu.home-dir '~'
-}
-
-export def create_right_prompt [] {
-  if ($env.GIT.TOPLEVEL | is-empty) {
-    return
-  }
-
-  (repo-styled)
-}
-
-export def pre_prompt_hook [] {
-  { ||
-    $env.GIT.TOPLEVEL = (pwd_is_git)
-  }
-}
-
-def pwd_is_git []: nothing -> string {
-  let repo_toplevel = (do -i { ^git rev-parse --show-toplevel | complete })
-  $repo_toplevel.stdout
 }

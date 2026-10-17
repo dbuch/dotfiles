@@ -1,11 +1,17 @@
-export def completer [spans: list<string>] {
-  let carapace_completer = {|spans: list<string>|
-    let expanded_alias = (scope aliases | where name == $spans.0 | get -o expansion.0)
+use std/util
+
+export def completer [buffer: string]: nothing -> table {
+  # `util structure` emits no token for trailing whitespace, but carapace needs an explicit
+  # empty trailing arg to know the cursor sits on a fresh, empty positional (e.g. "ls ").
+  let tokens = (util structure $buffer | get text | if ($buffer | str ends-with ' ') { append '' } else { $in })
+
+  let carapace_completer = {|tokens: list<string>|
+    let expanded_alias = (scope aliases | where name == $tokens.0 | get -o expansion.0)
 
     let tokens = (if $expanded_alias != null {
-      $spans | skip 1 | prepend ($expanded_alias | split row " " | take 1)
+      $tokens | skip 1 | prepend ($expanded_alias | split row " " | take 1)
     } else {
-      $spans
+      $tokens
     })
 
     let cmd = $tokens.0 | str trim --left --char '^'
@@ -15,8 +21,7 @@ export def completer [spans: list<string>] {
       | if ($in | default [] | where value =~ '^-.*ERR$' | is-empty) { $in } else { null }
   }
 
-  let fish_completer = {|spans|
-      fish --command $"complete '--do-complete=($spans | str replace --all "'" "\\'" | str join ' ')'"
+  let fish_completer = {|buffer: string| fish --command $"complete '--do-complete=($buffer | str replace --all "'" "\\'")'"
       | from tsv --flexible --noheaders --no-infer
       | rename value description
       | update value {|row|
@@ -29,8 +34,8 @@ export def completer [spans: list<string>] {
       }
   }
 
-  match $spans.0 {
-      git => $fish_completer
-      _ => $carapace_completer
-  } | do $in $spans
+  match $tokens.0? {
+      git => (do $fish_completer $buffer)
+      _ => (do $carapace_completer $tokens)
+  }
 }

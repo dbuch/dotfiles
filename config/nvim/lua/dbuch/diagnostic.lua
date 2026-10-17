@@ -1,9 +1,9 @@
 local M = {}
 
 function M.config()
-  vim.diagnostic.config({
+  ---@type vim.diagnostic.Opts
+  local diag_opts = {
     virtual_text = false,
-    -- virtual_text = { source = true },
     severity_sort = true,
     update_in_insert = true,
     signs = {
@@ -14,10 +14,8 @@ function M.config()
         [vim.diagnostic.severity.HINT] = '○',
       },
     },
-    jump = {
-      float = true,
-    },
-  })
+  }
+  vim.diagnostic.config(diag_opts)
 
   vim.api.nvim_set_hl(0, 'LspCodeLens', { link = 'WarningMsg' })
 

@@ -66,6 +66,7 @@ autocmd('FileType', {
     'query',
     'DressingSelect',
     'Scratch',
+    'nvim-undotree',
   },
   callback = function(event)
     NvimTrait.set_close_with_q(event.buf)
@@ -90,8 +91,6 @@ autocmd('TermOpen', {
 })
 
 NvimTrait.on_ts_filetype(function(bufnr, _lang)
-  require('dbuch.treesitter').attach(bufnr)
-
   vim.bo[bufnr].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
   vim.wo[0][0].foldexpr = 'v:lua.vim.treesitter.foldexpr()'
   vim.wo[0][0].foldmethod = 'expr'

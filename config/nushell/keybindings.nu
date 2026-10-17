@@ -1,161 +1,194 @@
-[
-  {
-    name: completion_menu
-    modifier: Alt
-    keycode: char_l
-    mode: [vi_normal, vi_insert]
-    event: {
-      until: [
-        { send: menu name: completion_menu }
-        { send: menunext }
-      ]
+export def main []: nothing -> list {
+  [
+    {
+      name: completion_menu_alt
+      modifier: Alt
+      keycode: char_l
+      mode: [vi_normal, vi_insert]
+      event: {
+        until: [
+          { send: menu name: completion_menu }
+          { send: menunext }
+        ]
+      }
     }
-  }
-  {
-      name: ide_completion_menu
+    {
+        name: ide_completion_menu_alt
+        modifier: control
+        keycode: char_n
+        mode: [emacs vi_normal vi_insert]
+        event: {
+            until: [
+                { send: menu name: ide_completion_menu }
+                { send: menunext }
+                { edit: complete }
+            ]
+        }
+    }
+    {
+      name: completion_previous_alt
+      modifier: Alt
+      keycode: char_h
+      mode: [vi_normal, vi_insert]
+      event: { send: menuprevious }
+    }
+    {
+      name: completion_up
+      modifier: Alt
+      keycode: char_k
+      mode: [vi_normal, vi_insert]
+      event: { send: menuup }
+    }
+    {
+      name: completion_down
+      modifier: Alt
+      keycode: char_j
+      mode: [vi_normal, vi_insert]
+      event: { send: menudown }
+    }
+    {
+      name: history_menu_alt
+      modifier: Alt
+      keycode: char_r
+      mode: [vi_normal, vi_insert]
+      event: { send: menu name: history_menu }
+    }
+    {
+      name: next_page
       modifier: control
-      keycode: char_n
-      mode: [emacs vi_normal vi_insert]
+      keycode: char_x
+      mode: vi_normal
+      event: { send: menupagenext }
+    }
+    {
+      name: undo_or_previous_page
+      modifier: control
+      keycode: char_z
+      mode: vi_normal
       event: {
-          until: [
-              { send: menu name: ide_completion_menu }
-              { send: menunext }
-              { edit: complete }
-          ]
-      }
-  }
-  {
-    name: completion_previous
-    modifier: Alt
-    keycode: char_h
-    mode: [vi_normal, vi_insert]
-    event: { send: menuprevious }
-  }
-  {
-    name: completion_up
-    modifier: Alt
-    keycode: char_k
-    mode: [vi_normal, vi_insert]
-    event: { send: menuup }
-  }
-  {
-    name: completion_down
-    modifier: Alt
-    keycode: char_j
-    mode: [vi_normal, vi_insert]
-    event: { send: menudown }
-  }
-  {
-    name: history_menu
-    modifier: Alt
-    keycode: char_r
-    mode: [vi_normal, vi_insert]
-    event: { send: menu name: history_menu }
-  }
-  {
-    name: next_page
-    modifier: control
-    keycode: char_x
-    mode: vi_normal
-    event: { send: menupagenext }
-  }
-  {
-    name: undo_or_previous_page
-    modifier: control
-    keycode: char_z
-    mode: vi_normal
-    event: {
-      until: [
-        { send: menupageprevious }
-        { edit: undo }
-      ]
-      }
-  }
-  {
-    name: unix-line-discard
-    modifier: control
-    keycode: char_u
-    mode: [vi_normal, vi_insert]
-    event: {
-      until: [
-        {edit: cutfromlinestart}
-      ]
+        until: [
+          { send: menupageprevious }
+          { edit: undo }
+        ]
+        }
     }
-  }
-  {
-    name: kill-line
-    modifier: control
-    keycode: char_k
-    mode: [vi_normal, vi_insert]
-    event: {
-      until: [
-        {edit: cuttolineend}
-      ]
-    }
-  }
-  {
-    name: commands_menu
-    modifier: control
-    keycode: char_t
-    mode: [vi_normal, vi_insert]
-    event: { send: menu name: commands_menu }
-  }
-  {
-    name: nvim_tv_fd
-    modifier: Alt
-    keycode: char_e
-    mode: [vi_normal vi_insert]
-    event: {
-      send: ExecuteHostCommand
-      cmd: "let f = (tv files); if ($f | str length) > 0 { nvim $f }"
-    }
-  }
-  {
-    name: nvim_tv_grep
-    modifier: Alt
-    keycode: char_g
-    mode: [vi_normal vi_insert]
-    event: {
-      send: ExecuteHostCommand
-      cmd: "let args = (tv grep | split row ':'); if ($args | length) == 2 { nvim $args.0 +:($args.1) }"
-    }
-  }
-  {
-    name: bookmarks
-    modifier: Alt
-    keycode: char_b
-    mode: [vi_normal, vi_insert]
-    event: { send: menu name: bookmarks_menu }
-  }
-  {
-    name: vars_menu
-    modifier: alt
-    keycode: char_o
-    mode: [vi_normal, vi_insert]
-    event: { send: menu name: vars_menu }
-  }
-  {
-    name: commands_with_description
-    modifier: control
-    keycode: char_s
-    mode: [vi_normal, vi_insert]
-    event: { send: menu name: commands_with_description }
-  }
-  {
-      name: exit
-      modifier: none
-      keycode: char_q
-      mode: [vi_normal]
+    {
+      name: unix-line-discard
+      modifier: control
+      keycode: char_u
+      mode: [vi_normal, vi_insert]
       event: {
-          send: executehostcommand
-          cmd: "exit"
+        until: [
+          {edit: cutfromlinestart}
+        ]
       }
-  }
-  {
-      name: insert_newline
+    }
+    {
+      name: kill-line
+      modifier: control
+      keycode: char_k
+      mode: [vi_normal, vi_insert]
+      event: {
+        until: [
+          {edit: cuttolineend}
+        ]
+      }
+    }
+    {
+      name: commands_menu
+      modifier: control
+      keycode: char_t
+      mode: [vi_normal, vi_insert]
+      event: { send: menu name: commands_menu }
+    }
+    {
+      name: nvim_tv_fd
+      modifier: Alt
+      keycode: char_e
+      mode: [vi_normal vi_insert]
+      event: {
+        send: ExecuteHostCommand
+        cmd: "let f = (tv files); if ($f | str length) > 0 { nvim $f }"
+      }
+    }
+    {
+      name: nvim_tv_grep
+      modifier: Alt
+      keycode: char_g
+      mode: [vi_normal vi_insert]
+      event: {
+        send: ExecuteHostCommand
+        cmd: "let args = (tv grep | split row ':'); if ($args | length) == 2 { nvim $args.0 +:($args.1) }"
+      }
+    }
+    {
+      name: bookmarks
+      modifier: Alt
+      keycode: char_b
+      mode: [vi_normal, vi_insert]
+      event: { send: menu name: bookmarks_menu }
+    }
+    {
+      name: vars_menu
       modifier: alt
-      keycode: enter
-      mode: [emacs vi_normal vi_insert]
-      event: { edit: insertnewline }
-  }
-]
+      keycode: char_o
+      mode: [vi_normal, vi_insert]
+      event: { send: menu name: vars_menu }
+    }
+    {
+      name: commands_with_description
+      modifier: control
+      keycode: char_s
+      mode: [vi_normal, vi_insert]
+      event: { send: menu name: commands_with_description }
+    }
+    {
+        name: exit
+        modifier: none
+        keycode: char_q
+        mode: [vi_normal]
+        event: {
+            send: executehostcommand
+            cmd: "exit"
+        }
+    }
+    {
+        name: insert_newline
+        modifier: alt
+        keycode: enter
+        mode: [emacs vi_normal vi_insert]
+        event: { edit: insertnewline }
+    }
+    # vim-style H/L -> first-non-blank / end-of-line, matching `map('n', 'H', '^')`
+    # and `map('n', 'L', '$')`. Two entries per key since terminals differ on
+    # whether Shift+letter arrives as a bare uppercase char or as shift+lowercase.
+    {
+      name: line-start-bare
+      modifier: none
+      keycode: char_u48
+      mode: [vi_normal]
+      event: { edit: movetolinenonblankstart }
+    }
+    {
+      name: line-start-shift
+      modifier: shift
+      keycode: char_h
+      mode: [vi_normal]
+      event: { edit: movetolinenonblankstart }
+    }
+    {
+      name: line-end-bare
+      modifier: none
+      keycode: char_u4c
+      mode: [vi_normal]
+      event: { edit: movetolineend }
+    }
+    {
+      name: line-end-shift
+      modifier: shift
+      keycode: char_l
+      mode: [vi_normal]
+      event: { edit: movetolineend }
+    }
+  ]
+}

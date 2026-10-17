@@ -1,0 +1,16 @@
+config-file = vim
+config-file = split
+
+keybind = alt+w=activate_key_table_once:Split
+keybind = Split/
+
+keybind = Split/h=goto_split:left
+keybind = Split/j=goto_split:down
+keybind = Split/l=goto_split:right
+keybind = Split/k=goto_split:up
+keybind = Split/f=toggle_split_zoom
+
+keybind = Split/shift+h=new_split:left
+keybind = Split/shift+j=new_split:down
+keybind = Split/shift+l=new_split:up
+keybind = Split/shift+k=new_split:right
